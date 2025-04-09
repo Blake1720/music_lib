@@ -13,3 +13,6 @@ logs/
 
 #temp audio files
 temp_audio/
+
+#cache
+.cache
