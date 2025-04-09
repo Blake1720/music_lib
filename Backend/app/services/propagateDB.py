@@ -37,11 +37,25 @@ def insert_album(name, artist_id):
     return cur.fetchone()[0]
 
 def insert_song(data, album_id, genre, popularity):
+    # Get audio features for the track
+    audio_features = sp.audio_features(data['id'])[0]
+    
     cur.execute("""
     INSERT OR IGNORE INTO Song (
-        name, album_id, genre, duration, instrumentalness, acousticness, danceability, liveness, tempo, popularity
-    ) VALUES (?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, ?)""", (
-        data['name'], album_id, genre, data['duration_ms'] // 1000, popularity
+        name, album_id, genre, duration, 
+        instrumentalness, acousticness, danceability, 
+        liveness, tempo, popularity
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
+        data['name'], 
+        album_id, 
+        genre, 
+        data['duration_ms'] // 1000,
+        audio_features['instrumentalness'],
+        audio_features['acousticness'],
+        audio_features['danceability'],
+        audio_features['liveness'],
+        audio_features['tempo'],
+        popularity
     ))
 
 def fetch_and_store_songs(limit=100):
@@ -75,10 +89,10 @@ def fetch_and_store_songs(limit=100):
 
                 total_added += 1
                 print(f"[{total_added}/100] Added: {item['name']} by {artist_name}")
-                time.sleep(0.1)
+                time.sleep(0.1)  # Add a small delay to avoid rate limiting
         except Exception as e:
             print("Error:", e)
-            time.sleep(1)
+            time.sleep(1)  # Longer delay on error
 
     conn.commit()
     conn.close()
