@@ -6,7 +6,7 @@ def query_music_app_db(db_path="databases/music_app.db"):
 
     try:
         query = """  # Add your SQL query here
-        SELECT * FROM User;  # Example query — replace or remove
+        SELECT * FROM Song WHERE popularity > 75
         """
         cursor.execute(query)
         results = cursor.fetchall()
