@@ -7,19 +7,31 @@ from dotenv import load_dotenv
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
+# Debug prints
+print(f"Current file path: {__file__}")
+print(f"Current working directory: {os.getcwd()}")
+
 # Load environment variables from project root
-env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), '.env')
+print(f"Looking for .env at: {env_path}")
+print(f".env exists: {os.path.exists(env_path)}")
+
 load_dotenv(env_path)
 
 client_id = os.getenv("SPOTIPY_CLIENT_ID")
 client_secret = os.getenv("SPOTIPY_CLIENT_SECRET")
+
+print(f"Client ID: {client_id}")
+print(f"Client Secret: {client_secret}")
 
 # Spotify authentication
 auth_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
 # SQLite connection
-DB_PATH = "../../Database/music_app.db"
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 
+                      "Database", "music_app.db")
+print(f"Database path: {DB_PATH}")
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
