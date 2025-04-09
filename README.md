@@ -15,6 +15,3 @@ The Schema is not correct yet.
 
 1. Run `python Database/create_database.py` to create the database
 2. Run `python Database/insert_data.py` to insert the data into the database
-
-
-
