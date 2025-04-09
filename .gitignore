@@ -10,3 +10,6 @@ __pycache__/
 
 #logs
 logs/
+
+#temp audio files
+temp_audio/

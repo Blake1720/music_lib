@@ -1,10 +1,22 @@
-
-
 import sqlite3
+import os
 
-def create_music_app_db(db_path="music_app.db"):
+def create_music_app_db():
+    # Target the database in the Database directory
+    db_path = os.path.join(os.path.dirname(__file__), "music_app.db")
+    print(f"Creating database at: {db_path}")
+    
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+
+    # Drop existing tables if they exist
+    tables = [
+        "User", "Artist", "Album", "Song", 
+        "Playlist", "Playlist_Song", "History"
+    ]
+    for table in tables:
+        cursor.execute(f"DROP TABLE IF EXISTS {table}")
+    conn.commit()
 
     cursor.execute("""
     CREATE TABLE User (
