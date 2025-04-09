@@ -22,5 +22,6 @@ async def root():
     return {"message": "Welcome to the Music Recommendation API"}
 
 # Import and include routers
-from routes import recommendations
-app.include_router(recommendations.router, prefix="/api/v1", tags=["recommendations"]) 
+from routes import database_route
+#app.include_router(recommendations.router, prefix="/api/v1", tags=["recommendations"])
+app.include_router(database_route.router, prefix="/api/v1/database", tags=["database"]) 

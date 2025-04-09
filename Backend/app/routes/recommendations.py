@@ -26,3 +26,4 @@ async def get_song(song_id: str):
         return song
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
+    
