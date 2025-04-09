@@ -7,7 +7,7 @@ def create_music_app_db(db_path="music_app.db"):
 
     cursor.execute("""
     CREATE TABLE User (
-        user_id INTEGER PRIMARY KEY,
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         age INTEGER
     );
@@ -15,14 +15,14 @@ def create_music_app_db(db_path="music_app.db"):
 
     cursor.execute("""
     CREATE TABLE Artist (
-        artist_id INTEGER PRIMARY KEY,
+        artist_id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT
     );
     """)
 
     cursor.execute("""
     CREATE TABLE Album (
-        album_id INTEGER PRIMARY KEY,
+        album_id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         artist_id INTEGER,
         date_created DATETIME,
@@ -32,7 +32,7 @@ def create_music_app_db(db_path="music_app.db"):
 
     cursor.execute("""
     CREATE TABLE Song (
-        song_id INTEGER PRIMARY KEY,
+        song_id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         album_id INTEGER,
         genre TEXT,
