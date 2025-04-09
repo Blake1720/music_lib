@@ -111,7 +111,7 @@ def display_all_songs() -> List[Dict[str, Any]]:
     try:
         cursor.execute("""
             SELECT s.song_id, s.name as song_name, al.name as album_name, 
-                   ar.name as artist_name, s.genre, s.duration
+                   ar.name as artist_name, s.genre, s.album_url
             FROM Song s
             JOIN Album al ON s.album_id = al.album_id
             JOIN Artist ar ON al.artist_id = ar.artist_id
@@ -132,7 +132,7 @@ def display_all_songs() -> List[Dict[str, Any]]:
                 "Album": row["album_name"],
                 "Artist": row["artist_name"],
                 "Genre": row["genre"],
-                "Duration (s)": row["duration"]
+                "Album URL": row["album_url"]
             } for row in songs
         ]
         print(tabulate(song_list, headers="keys", tablefmt="grid"))

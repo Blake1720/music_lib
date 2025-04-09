@@ -34,7 +34,7 @@ async def get_all_artists() -> List[Dict[str, Any]]:
     """Get all artists in the database"""
     try:
         artists = display_all_artists()
-        return {"artists": artists}
+        return artists
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -43,7 +43,7 @@ async def get_all_albums() -> List[Dict[str, Any]]:
     """Get all albums in the database"""
     try:
         albums = display_all_albums()
-        return {"albums": albums}
+        return albums
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -52,7 +52,7 @@ async def get_all_songs() -> List[Dict[str, Any]]:
     """Get all songs in the database"""
     try:
         songs = display_all_songs()
-        return {"songs": songs}
+        return songs
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
