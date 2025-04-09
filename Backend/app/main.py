@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List, Optional
 
 app = FastAPI(
     title="Music Recommendation API",
@@ -21,5 +22,5 @@ async def root():
     return {"message": "Welcome to the Music Recommendation API"}
 
 # Import and include routers
-from app.routes import recommendations
+from routes import recommendations
 app.include_router(recommendations.router, prefix="/api/v1", tags=["recommendations"]) 

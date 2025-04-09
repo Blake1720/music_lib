@@ -7,7 +7,8 @@ The Schema is not correct yet.
 
 1. Create a .env file and add your API keys
 2. Start the virtual environment with `python -m venv venv`
-3. Activate the virtual environment with `source venv/bin/activate`
+3. (mac) Activate the virtual environment with `source venv/bin/activate`
+3. (windows) Activate the virtual environment with `venv\Scripts\activate`
 4. Install the dependencies with `pip install -r requirements.txt`
 5. Run the app with `uvicorn main:app --reload`
 

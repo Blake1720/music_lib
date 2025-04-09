@@ -1,4 +1,4 @@
-from app.models.song import Song, RecommendationResponse
+from models.song import Song, RecommendationResponse
 from typing import List, Optional
 import random
 
