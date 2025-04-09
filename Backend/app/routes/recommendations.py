@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models.song import Song, RecommendationRequest, RecommendationResponse
-from app.services.recommendation_service import RecommendationService
+from models.song import Song, RecommendationRequest, RecommendationResponse
+from services.recommendation_service import RecommendationService
 
 router = APIRouter()
 recommendation_service = RecommendationService()
