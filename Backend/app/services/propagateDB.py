@@ -17,7 +17,7 @@ auth_manager = SpotifyClientCredentials(client_id=client_id, client_secret=clien
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
 # SQLite connection
-DB_PATH = "../../Database/music_app.db"
+DB_PATH = "../music_app.db"
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
