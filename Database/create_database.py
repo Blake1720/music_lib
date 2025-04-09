@@ -1,4 +1,5 @@
 
+
 import sqlite3
 
 def create_music_app_db(db_path="music_app.db"):
