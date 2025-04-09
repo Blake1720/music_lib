@@ -1,5 +1,3 @@
-
-
 import sqlite3
 
 def create_music_app_db(db_path="music_app.db"):
@@ -37,13 +35,7 @@ def create_music_app_db(db_path="music_app.db"):
         name TEXT,
         album_id INTEGER,
         genre TEXT,
-        duration INTEGER,
-        instrumentalness REAL,
-        acousticness REAL,
-        danceability REAL,
-        liveness REAL,
-        tempo REAL,
-        popularity REAL,
+        album_url TEXT,
         FOREIGN KEY (album_id) REFERENCES Album(album_id)
     );
     """)
