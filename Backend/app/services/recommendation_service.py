@@ -10,8 +10,8 @@ from scipy.spatial import cKDTree
 class RecommendationService:
     def __init__(self):
         # Connect to the SQLite database
-        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-                              "Database", "music_app.db")
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        db_path = os.path.join(root_dir, "../Database/music_app.db")
         self.conn = sqlite3.connect(db_path)
         self.conn.row_factory = sqlite3.Row  # This enables column access by name
         self.cursor = self.conn.cursor()

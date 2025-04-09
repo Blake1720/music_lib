@@ -22,8 +22,8 @@ sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
 ))
 
 # SQLite connection
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 
-                      "Database", "music_app.db")
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+DB_PATH = os.path.join(root_dir, "Database/music_app.db")
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
