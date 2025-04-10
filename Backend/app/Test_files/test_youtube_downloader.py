@@ -2,7 +2,7 @@ import sys
 import os
 
 
-from services.youtube_downloader import YouTubeDownloader
+from app.services.youtube_downloader import YouTubeDownloader
 
 
 def main():

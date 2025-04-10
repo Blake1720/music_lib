@@ -1,7 +1,7 @@
 import sys
 import os
 
-from services.audio_analyzer import AudioAnalyzer
+from app.services.audio_analyzer import AudioAnalyzer
 import json
 import numpy as np
 
