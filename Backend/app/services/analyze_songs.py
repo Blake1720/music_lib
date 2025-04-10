@@ -153,55 +153,6 @@ def download_audio(url: str, output_path: str) -> bool:
     
     return False
 
-def analyze_song(song_id: int, song_name: str, artist_name: str, album_name: str) -> bool:
-    """Analyze a single song and update its features in the database"""
-    try:
-        print(f"\nProcessing: {song_name} by {artist_name}")
-        
-        # Search for the song on YouTube
-        search_query = f"{song_name} {artist_name} {album_name} audio"
-        results = YoutubeSearch(search_query, max_results=1).to_dict()
-        
-        if not results:
-            print(f"❌ No YouTube results found for: {search_query}")
-            return False
-            
-        video_url = f"https://youtube.com{results[0]['url_suffix']}"
-        print(f"Found video: {video_url}")
-        
-        # Create temporary directory for audio files
-        temp_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 
-                               "temp_audio")
-        os.makedirs(temp_dir, exist_ok=True)
-        
-        # Download audio
-        temp_audio_path = os.path.join(temp_dir, f"{song_id}.wav")
-        if not download_audio(video_url, temp_audio_path):
-            print(f"❌ Failed to download audio for: {song_name}")
-            return False
-            
-        # Analyze audio
-        analyzer = AudioAnalyzer()
-        features = analyzer.analyze_audio(temp_audio_path)
-        
-        # Clean up temporary file
-        try:
-            os.remove(temp_audio_path)
-        except Exception as e:
-            print(f"Warning: Could not remove temporary file {temp_audio_path}: {e}")
-        
-        # Update database with features
-        if update_song_features(song_id, features):
-            print(f"✅ Successfully analyzed: {song_name}")
-            return True
-        else:
-            print(f"❌ Failed to update features for: {song_name}")
-            return False
-            
-    except Exception as e:
-        print(f"❌ Error processing {song_name}: {str(e)}")
-        return False
-
 def process_songs():
     """Process all songs in the database that don't have features yet"""
     # Initialize downloader and analyzer
