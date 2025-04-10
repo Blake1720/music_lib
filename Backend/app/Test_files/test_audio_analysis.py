@@ -1,10 +1,7 @@
 import sys
 import os
 
-# Add the Backend directory to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from app.services.audio_analyzer import AudioAnalyzer
+from services.audio_analyzer import AudioAnalyzer
 import json
 import numpy as np
 

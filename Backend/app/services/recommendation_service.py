@@ -1,4 +1,4 @@
-from models.song import Song, RecommendationResponse
+from app.models.song import Song, RecommendationResponse
 from typing import List, Optional, Tuple
 import random
 import sqlite3
@@ -21,9 +21,13 @@ class RecommendationService:
         """Build a k-d tree of song features for efficient nearest neighbor search"""
         # Get all songs and their features
         self.cursor.execute("""
-            SELECT song_id, popularity, instrumentalness, acousticness, 
-                   danceability, liveness, tempo 
+            SELECT song_id, duration, tempo, spectral_centroid, spectral_rolloff,
+                   spectral_contrast, chroma_mean, chroma_std, harmonic_ratio,
+                   onset_strength, zero_crossing_rate, rms_energy
             FROM Song
+            WHERE duration IS NOT NULL 
+              AND tempo IS NOT NULL
+              AND spectral_centroid IS NOT NULL
         """)
         rows = self.cursor.fetchall()
         
@@ -32,8 +36,19 @@ class RecommendationService:
         
         # Create feature matrix
         features = np.array([
-            [row['popularity'], row['instrumentalness'], row['acousticness'],
-             row['danceability'], row['liveness'], row['tempo']]
+            [
+                row['duration'],
+                row['tempo'],
+                row['spectral_centroid'],
+                row['spectral_rolloff'],
+                row['spectral_contrast'],
+                row['chroma_mean'],
+                row['chroma_std'],
+                row['harmonic_ratio'],
+                row['onset_strength'],
+                row['zero_crossing_rate'],
+                row['rms_energy']
+            ]
             for row in rows
         ])
         
@@ -58,12 +73,16 @@ class RecommendationService:
             album=self._get_album_name(row['album_id']),
             genre=row['genre'].split(',') if row['genre'] else [],
             duration=row['duration'],
-            popularity=row['popularity'],
-            instrumentalness=row['instrumentalness'],
-            acousticness=row['acousticness'],
-            danceability=row['danceability'],
-            liveness=row['liveness'],
-            tempo=row['tempo']
+            tempo=row['tempo'],
+            spectral_centroid=row['spectral_centroid'],
+            spectral_rolloff=row['spectral_rolloff'],
+            spectral_contrast=row['spectral_contrast'],
+            chroma_mean=row['chroma_mean'],
+            chroma_std=row['chroma_std'],
+            harmonic_ratio=row['harmonic_ratio'],
+            onset_strength=row['onset_strength'],
+            zero_crossing_rate=row['zero_crossing_rate'],
+            rms_energy=row['rms_energy']
         )
 
     def _get_artist_name(self, album_id: int) -> str:
@@ -110,12 +129,17 @@ class RecommendationService:
         
         # Get the base song's features and normalize them
         base_features = [
-            base_song.popularity,
-            base_song.instrumentalness,
-            base_song.acousticness,
-            base_song.danceability,
-            base_song.liveness,
-            base_song.tempo
+            base_song.duration,
+            base_song.tempo,
+            base_song.spectral_centroid,
+            base_song.spectral_rolloff,
+            base_song.spectral_contrast,
+            base_song.chroma_mean,
+            base_song.chroma_std,
+            base_song.harmonic_ratio,
+            base_song.onset_strength,
+            base_song.zero_crossing_rate,
+            base_song.rms_energy
         ]
         normalized_features = self._normalize_features(base_features)
         
@@ -149,12 +173,17 @@ class RecommendationService:
                 "total_recommendations": len(recommendations),
                 "algorithm": "k-d tree nearest neighbors",
                 "feature_weights": {
-                    "popularity": 1.0,
-                    "instrumentalness": 1.0,
-                    "acousticness": 1.0,
-                    "danceability": 1.0,
-                    "liveness": 1.0,
-                    "tempo": 1.0
+                    "duration": 1.0,
+                    "tempo": 1.0,
+                    "spectral_centroid": 1.0,
+                    "spectral_rolloff": 1.0,
+                    "spectral_contrast": 1.0,
+                    "chroma_mean": 1.0,
+                    "chroma_std": 1.0,
+                    "harmonic_ratio": 1.0,
+                    "onset_strength": 1.0,
+                    "zero_crossing_rate": 1.0,
+                    "rms_energy": 1.0
                 }
             }
         )

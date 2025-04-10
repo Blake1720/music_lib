@@ -16,3 +16,9 @@ The Schema is not correct yet.
 
 1. Run `python Database/create_database.py` to create the database
 2. Run `python Database/insert_data.py` to insert the data into the database
+
+# Test files
+
+1. Run 'python -m app.Test_files.test_recommendations' to test the recommendations
+2. Run 'python -m app.Test_files.test_youtube_downloader' to test the youtube downloader
+3. Run 'python -m app.Test_files.test_audio_analysis' to test the audio analysis

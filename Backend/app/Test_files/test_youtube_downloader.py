@@ -1,10 +1,8 @@
 import sys
 import os
 
-# Add the Backend directory to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.services.youtube_downloader import YouTubeDownloader
+from services.youtube_downloader import YouTubeDownloader
 
 
 def main():
