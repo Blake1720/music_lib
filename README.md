@@ -8,11 +8,12 @@
 3. (windows) Activate the virtual environment with `venv\Scripts\activate`
 4. Install the dependencies with `pip install -r requirements.txt`
 5. Download FFEMPEG -- Required for audio analysis
-    a. Install using Homebrew(mac): `brew install ffmpeg`
-    b. Install from website(windows): https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
-    - Unzip
-    - Add the `bin` directory of your FFmpeg installation to your system PATH
-    - Example: `C:\ffmpeg\bin`
+    * Install FFmpeg:
+      * macOS: `brew install ffmpeg`
+      * Windows: Download from https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+        - Unzip the file
+        - Add the `bin` directory of your FFmpeg installation to your system PATH
+        - Example: `C:\ffmpeg\bin`
 6. Run the app with `uvicorn main:app --reload`
 
 # Database
