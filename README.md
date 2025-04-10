@@ -7,7 +7,8 @@
 3. (mac) Activate the virtual environment with `source venv/bin/activate`
 3. (windows) Activate the virtual environment with `venv\Scripts\activate`
 4. Install the dependencies with `pip install -r requirements.txt`
-5. Run the app with `uvicorn main:app --reload`
+5. Download FFEMPEG from https://ffmpeg.org/download.html -- Required for audio analysis
+6. Run the app with `uvicorn main:app --reload`
 
 # Database
 
