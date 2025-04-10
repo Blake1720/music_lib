@@ -44,6 +44,12 @@ def insert_album(name, artist_id):
 
 def insert_song(name, album_id, genre, album_url):
     try:
+        # Check if song already exists
+        cur.execute("SELECT song_id FROM Song WHERE name = ? AND album_id = ?", (name, album_id))
+        if cur.fetchone() is not None:
+            print(f"⏭ Skipping: {name} (already exists)")
+            return False
+            
         cur.execute("""
         INSERT OR IGNORE INTO Song (
             name, album_id, genre, album_url

@@ -50,6 +50,19 @@ def create_music_app_db():
         album_id INTEGER,
         genre TEXT,
         album_url TEXT,
+        duration REAL,
+        tempo REAL,
+        spectral_centroid REAL,
+        spectral_rolloff REAL,
+        spectral_contrast REAL,
+        chroma_mean REAL,
+        chroma_std REAL,
+        harmonic_ratio REAL,
+        onset_strength REAL,
+        zero_crossing_rate REAL,
+        rms_energy REAL,
+        mel_spectrogram BLOB,
+        tonnetz BLOB,
         FOREIGN KEY (album_id) REFERENCES Album(album_id)
     );
     """)
