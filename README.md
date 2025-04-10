@@ -9,7 +9,8 @@
 4. Install the dependencies with `pip install -r requirements.txt`
 5. Download FFEMPEG -- Required for audio analysis
     a. Install using Homebrew(mac): `brew install ffmpeg`
-    b. Install from website(windows): https://ffmpeg.org/download.html
+    b. Install from website(windows): https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
+    - Unzip
     - Add the `bin` directory of your FFmpeg installation to your system PATH
     - Example: `C:\ffmpeg\bin`
 6. Run the app with `uvicorn main:app --reload`
