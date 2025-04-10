@@ -17,7 +17,8 @@
 # Database
 
 1. Run `python Database/create_database.py` to create the database
-2. Run `python Database/insert_data.py` to insert the data into the database
+2. Run `python services/propagateDB.py` to populate the database
+3. Run `python services/analyze_songs.py` to analyze the songs and add features to the database
 
 # Test files
 
