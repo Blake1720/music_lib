@@ -1,3 +1,6 @@
+'''
+This file is used to display the contents of the database.
+'''
 import sqlite3
 import os
 from typing import List, Dict, Any

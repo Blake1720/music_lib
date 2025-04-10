@@ -1,3 +1,6 @@
+'''
+This file is used to populate the database with data from Spotify.
+'''
 import os
 import sqlite3
 import random

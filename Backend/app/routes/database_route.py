@@ -1,5 +1,6 @@
-#routes for the database
-
+'''
+This file creates the routes for the database.
+'''
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
 from services.propagateDB import fetch_and_store_songs

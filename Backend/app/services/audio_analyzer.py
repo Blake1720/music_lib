@@ -1,3 +1,6 @@
+'''
+This file is used to analyze the audio files and extract features.
+'''
 import librosa
 import numpy as np
 import os

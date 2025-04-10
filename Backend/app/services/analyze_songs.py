@@ -1,3 +1,6 @@
+'''
+This file is used to analyze the songs and add features to the database.
+'''
 import os
 import sqlite3
 import time

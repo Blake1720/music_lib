@@ -1,3 +1,6 @@
+'''
+This file defines the models for the songs and recommendations.
+'''
 from pydantic import BaseModel
 from typing import List, Optional
 

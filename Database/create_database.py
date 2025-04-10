@@ -1,3 +1,6 @@
+'''
+This file is used to create the database.
+'''
 import sqlite3
 import os
 

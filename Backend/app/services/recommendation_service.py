@@ -1,3 +1,6 @@
+'''
+This file is used to recommend songs based on the k-d tree nearest neighbors algorithm.
+'''
 from app.models.song import Song, RecommendationResponse
 from typing import List, Optional, Tuple
 import random

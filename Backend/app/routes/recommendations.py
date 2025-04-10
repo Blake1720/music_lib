@@ -1,3 +1,6 @@
+'''
+This file creates the routes for the recommendations and song retrieval.
+'''
 from fastapi import APIRouter, HTTPException
 from models.song import Song, RecommendationRequest, RecommendationResponse
 from services.recommendation_service import RecommendationService

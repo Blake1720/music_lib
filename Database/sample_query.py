@@ -1,3 +1,6 @@
+'''
+This file is used to print the contents of the database.
+'''
 import sqlite3
 
 def print_database_contents(db_path="music_app.db"):
