@@ -2,9 +2,6 @@
 venv/
 .env
 
-#database
-music_app.db
-
 #pycache
 __pycache__/
 
