@@ -33,8 +33,7 @@ def print_database_insights(db_path="music_app.db"):
             ORDER BY album_count DESC
             LIMIT 5;
         """)
-        rows = cursor.fetchall()
-        for name, count in rows:
+        for name, count in cursor.fetchall():
             print(f"{name}: {count} album(s)")
         print("-" * 60)
 
@@ -49,8 +48,7 @@ def print_database_insights(db_path="music_app.db"):
             ORDER BY song_count DESC
             LIMIT 5;
         """)
-        rows = cursor.fetchall()
-        for album, artist, count in rows:
+        for album, artist, count in cursor.fetchall():
             print(f"{album} by {artist}: {count} song(s)")
         print("-" * 60)
 
@@ -70,6 +68,23 @@ def print_database_insights(db_path="music_app.db"):
         else:
             for album, artist in rows:
                 print(f"{album} by {artist}")
+        print("-" * 60)
+
+        # 5. Artists with no albums
+        print("🎤 Artists with No Albums:")
+        cursor.execute("""
+            SELECT name FROM Artist
+            WHERE artist_id NOT IN (
+                SELECT DISTINCT artist_id FROM Album
+            )
+            LIMIT 5;
+        """)
+        rows = cursor.fetchall()
+        if not rows:
+            print("✅ All artists have at least one album.")
+        else:
+            for (artist,) in rows:
+                print(artist)
         print("-" * 60)
 
     except Exception as e:
