@@ -32,7 +32,9 @@ conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
 
 def get_random_query():
-    return random.choice(string.ascii_lowercase)
+    # Mix of lowercase letters and digits, 2-character queries
+    charset = string.ascii_lowercase + string.digits
+    return ''.join(random.choices(charset, k=2))
 
 def insert_artist(name):
     cur.execute("INSERT OR IGNORE INTO Artist (name) VALUES (?)", (name,))
@@ -81,23 +83,42 @@ def fetch_and_store_songs(limit=100):
     while total_added < limit:
         try:
             query = get_random_query()
+            print(f"\n🔎 Searching Spotify with query: '{query}'")
             results = sp.search(q=query, type='track', limit=50)
-            for item in results['tracks']['items']:
+
+            for item in results.get('tracks', {}).get('items', []):
                 if total_added >= limit:
                     break
-                track_id = item['id']
-                if track_id in seen_ids:
+
+                track_id = item.get('id')
+                if not track_id or track_id in seen_ids:
                     continue
                 seen_ids.add(track_id)
 
-                track_name = item['name']
-                artist_name = item['artists'][0]['name']
-                album_name = item['album']['name']
+                try:
+                    track_name = item.get('name')
+                    artist_info = item.get('artists')
+                    album_info = item.get('album')
+
+                    if not track_name or not artist_info or not album_info:
+                        print("⏭ Skipping track due to missing metadata.")
+                        continue
+
+                    artist_name = artist_info[0].get('name') if artist_info and len(artist_info) > 0 else None
+                    album_name = album_info.get('name')
+
+                    if not artist_name or not album_name:
+                        print(f"⏭ Skipping track '{track_name}' due to incomplete artist/album data.")
+                        continue
+
+                except Exception as e:
+                    print(f"⏭ Skipping track due to unexpected structure: {e}")
+                    continue
 
                 # Get genre
                 try:
-                    artist_info = sp.artist(item['artists'][0]['id'])
-                    genres = artist_info.get('genres', [])
+                    artist_data = sp.artist(artist_info[0]['id'])
+                    genres = artist_data.get('genres', [])
                 except:
                     genres = []
 
@@ -113,7 +134,7 @@ def fetch_and_store_songs(limit=100):
                     print(f"⏭ Skipping: {track_name} by {artist_name} (no album cover)")
                     continue
 
-                # Insert artist and album (only if genre and album_url are present)
+                # Insert artist and album
                 artist_id = insert_artist(artist_name)
                 album_id = insert_album(album_name, artist_id, album_url)
 
@@ -129,7 +150,7 @@ def fetch_and_store_songs(limit=100):
 
     conn.commit()
     conn.close()
-    print("✅ Done. Songs inserted into the database.")
+    print("\n✅ Done. Songs inserted into the database.")
 
 if __name__ == "__main__":
     fetch_and_store_songs(200)

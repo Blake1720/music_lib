@@ -1,37 +1,81 @@
 '''
-This file is used to print all entries in the Album table with full attributes.
+This file prints insights from the music_app database: totals, top artists/albums, etc.
 '''
 import sqlite3
 
-def print_all_albums(db_path="music_app.db"):
+def print_database_insights(db_path="music_app.db"):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    print("\n=== Full Contents of Album Table ===\n")
+    print("\n=== 🎵 Music Database Insights ===\n")
 
     try:
-        # Get column names from Album table
-        cursor.execute("PRAGMA table_info(Album);")
-        columns = [col[1] for col in cursor.fetchall()]
-        print("Columns:", ", ".join(columns))
-        print("-" * 80)
+        # 1. Total counts
+        cursor.execute("SELECT COUNT(*) FROM Artist;")
+        artist_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM Album;")
+        album_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM Song;")
+        song_count = cursor.fetchone()[0]
 
-        # Fetch all rows from Album table
-        cursor.execute("SELECT * FROM Album;")
+        print(f"👤 Total Artists: {artist_count}")
+        print(f"💿 Total Albums: {album_count}")
+        print(f"🎶 Total Songs: {song_count}")
+        print("-" * 60)
+
+        # 2. Top 5 artists with most albums
+        print("🏆 Top 5 Artists with Most Albums:")
+        cursor.execute("""
+            SELECT Artist.name, COUNT(Album.album_id) AS album_count
+            FROM Artist
+            JOIN Album ON Artist.artist_id = Album.artist_id
+            GROUP BY Artist.artist_id
+            ORDER BY album_count DESC
+            LIMIT 5;
+        """)
         rows = cursor.fetchall()
+        for name, count in rows:
+            print(f"{name}: {count} album(s)")
+        print("-" * 60)
 
+        # 3. Top 5 albums with most songs
+        print("📚 Top 5 Albums with Most Songs:")
+        cursor.execute("""
+            SELECT Album.name, Artist.name, COUNT(Song.song_id) AS song_count
+            FROM Album
+            JOIN Song ON Album.album_id = Song.album_id
+            JOIN Artist ON Album.artist_id = Artist.artist_id
+            GROUP BY Album.album_id
+            ORDER BY song_count DESC
+            LIMIT 5;
+        """)
+        rows = cursor.fetchall()
+        for album, artist, count in rows:
+            print(f"{album} by {artist}: {count} song(s)")
+        print("-" * 60)
+
+        # 4. Albums with no songs
+        print("🛑 Albums with No Songs:")
+        cursor.execute("""
+            SELECT Album.name, Artist.name
+            FROM Album
+            JOIN Artist ON Album.artist_id = Artist.artist_id
+            LEFT JOIN Song ON Album.album_id = Song.album_id
+            WHERE Song.song_id IS NULL
+            LIMIT 5;
+        """)
+        rows = cursor.fetchall()
         if not rows:
-            print("No albums found in the Album table.")
+            print("✅ All albums have at least one song.")
         else:
-            for row in rows:
-                for col, val in zip(columns, row):
-                    print(f"{col}: {val}")
-                print("-" * 80)
+            for album, artist in rows:
+                print(f"{album} by {artist}")
+        print("-" * 60)
 
     except Exception as e:
-        print(f"❌ Error reading Album table: {e}")
+        print(f"❌ Error querying database: {e}")
     finally:
         conn.close()
 
 if __name__ == "__main__":
-    print_all_albums()
+    print_database_insights()
