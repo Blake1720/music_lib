@@ -39,15 +39,14 @@ def insert_artist(name):
     cur.execute("SELECT artist_id FROM Artist WHERE name = ?", (name,))
     return cur.fetchone()[0]
 
-def insert_album(name, artist_id):
-    cur.execute("INSERT OR IGNORE INTO Album (name, artist_id, date_created) VALUES (?, ?, datetime('now'))", 
-                (name, artist_id))
+def insert_album(name, artist_id, album_url):
+    cur.execute("INSERT OR IGNORE INTO Album (name, artist_id, date_created, album_url) VALUES (?, ?, datetime('now'), ?)", 
+                (name, artist_id, album_url))
     cur.execute("SELECT album_id FROM Album WHERE name = ? AND artist_id = ?", (name, artist_id))
     return cur.fetchone()[0]
 
-def insert_song(name, album_id, genre, album_url):
+def insert_song(name, album_id, genre):
     try:
-        # Check if song already exists
         cur.execute("SELECT song_id FROM Song WHERE name = ? AND album_id = ?", (name, album_id))
         if cur.fetchone() is not None:
             print(f"⏭ Skipping: {name} (already exists)")
@@ -55,9 +54,9 @@ def insert_song(name, album_id, genre, album_url):
             
         cur.execute("""
         INSERT OR IGNORE INTO Song (
-            name, album_id, genre, album_url
-        ) VALUES (?, ?, ?, ?)""", (
-            name, album_id, genre, album_url
+            name, album_id, genre
+        ) VALUES (?, ?, ?)""", (
+            name, album_id, genre
         ))
         return True
     except Exception as e:
@@ -95,7 +94,7 @@ def fetch_and_store_songs(limit=100):
                 artist_name = item['artists'][0]['name']
                 album_name = item['album']['name']
 
-                # Get genres from Spotify
+                # Get genre
                 try:
                     artist_info = sp.artist(item['artists'][0]['id'])
                     genres = artist_info.get('genres', [])
@@ -104,14 +103,21 @@ def fetch_and_store_songs(limit=100):
 
                 if not genres:
                     print(f"⏭ Skipping: {track_name} by {artist_name} (no genre)")
-                    continue  # Skip tracks without a genre
+                    continue
 
                 genre = genres[0]
-                album_url = get_album_cover(artist_name, track_name)
 
+                # Get album cover
+                album_url = get_album_cover(artist_name, track_name)
+                if not album_url:
+                    print(f"⏭ Skipping: {track_name} by {artist_name} (no album cover)")
+                    continue
+
+                # Insert artist and album (only if genre and album_url are present)
                 artist_id = insert_artist(artist_name)
-                album_id = insert_album(album_name, artist_id)
-                if insert_song(track_name, album_id, genre, album_url):
+                album_id = insert_album(album_name, artist_id, album_url)
+
+                if insert_song(track_name, album_id, genre):
                     total_added += 1
                     print(f"[{total_added}/{limit}] ✅ Inserted: {track_name} by {artist_name} ({genre})")
 
@@ -126,4 +132,4 @@ def fetch_and_store_songs(limit=100):
     print("✅ Done. Songs inserted into the database.")
 
 if __name__ == "__main__":
-    fetch_and_store_songs(100)
+    fetch_and_store_songs(200)
