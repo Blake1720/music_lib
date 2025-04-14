@@ -23,7 +23,7 @@ def print_database_insights(db_path="music_app.db"):
         print(f"🎶 Total Songs: {song_count}")
         print("-" * 60)
 
-        # 2. Songs with analyzed features (e.g., duration set)
+        # 2. Songs with analyzed features
         print("📊 Songs with Analyzed Features:")
         cursor.execute("SELECT COUNT(*) FROM Song WHERE duration IS NOT NULL;")
         analyzed_count = cursor.fetchone()[0]
@@ -92,6 +92,41 @@ def print_database_insights(db_path="music_app.db"):
         else:
             for (artist,) in rows:
                 print(artist)
+        print("-" * 60)
+
+        # 7. Most recently analyzed song
+        print("🎧 Most Recently Analyzed Song:")
+        cursor.execute("""
+            SELECT s.name, al.name, ar.name,
+                   s.duration, s.tempo, s.spectral_centroid,
+                   s.spectral_rolloff, s.spectral_contrast,
+                   s.chroma_mean, s.chroma_std,
+                   s.onset_strength, s.zero_crossing_rate, s.rms_energy
+            FROM Song s
+            JOIN Album al ON s.album_id = al.album_id
+            JOIN Artist ar ON al.artist_id = ar.artist_id
+            WHERE s.duration IS NOT NULL
+            ORDER BY s.song_id DESC
+            LIMIT 1;
+        """)
+        row = cursor.fetchone()
+        if row:
+            (song, album, artist,
+             duration, tempo, centroid, rolloff, contrast,
+             chroma_mean, chroma_std,
+             onset_strength, zero_crossing, rms_energy) = row
+            print(f"\n🎵 {song} by {artist} from '{album}':")
+            print(f"   Duration: {duration:.2f}s")
+            print(f"   Tempo: {tempo:.2f} BPM")
+            print(f"   Spectral Centroid: {centroid:.2f}")
+            print(f"   Spectral Rolloff: {rolloff:.2f}")
+            print(f"   Spectral Contrast: {contrast:.2f}")
+            print(f"   Chroma Mean: {chroma_mean:.2f}, Std: {chroma_std:.2f}")
+            print(f"   Onset Strength: {onset_strength:.2f}")
+            print(f"   Zero Crossing Rate: {zero_crossing:.4f}")
+            print(f"   RMS Energy: {rms_energy:.6f}")
+        else:
+            print("No analyzed songs found.")
         print("-" * 60)
 
     except Exception as e:
