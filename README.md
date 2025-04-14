@@ -33,9 +33,9 @@
     * Install Node.js:
       * macOS: `brew install node`
       * Windows: Download from https://nodejs.org/en/download
-      – Run the installer
-      – Follow the setup wizard (use default settings)
-      – Ensure the box for npm (Node Package Manager) is checked
+         - Run the installer
+         - Follow the setup wizard (use default settings)
+         - Ensure the box for npm (Node Package Manager) is checked
 2. Run `npm install` to install dependencies
 3. Run `npm start dev` to start the server
 
