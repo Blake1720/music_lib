@@ -23,7 +23,14 @@ def print_database_insights(db_path="music_app.db"):
         print(f"🎶 Total Songs: {song_count}")
         print("-" * 60)
 
-        # 2. Top 5 artists with most albums
+        # 2. Songs with analyzed features (e.g., duration set)
+        print("📊 Songs with Analyzed Features:")
+        cursor.execute("SELECT COUNT(*) FROM Song WHERE duration IS NOT NULL;")
+        analyzed_count = cursor.fetchone()[0]
+        print(f"🔬 Analyzed Songs: {analyzed_count}")
+        print("-" * 60)
+
+        # 3. Top 5 artists with most albums
         print("🏆 Top 5 Artists with Most Albums:")
         cursor.execute("""
             SELECT Artist.name, COUNT(Album.album_id) AS album_count
@@ -37,7 +44,7 @@ def print_database_insights(db_path="music_app.db"):
             print(f"{name}: {count} album(s)")
         print("-" * 60)
 
-        # 3. Top 5 albums with most songs
+        # 4. Top 5 albums with most songs
         print("📚 Top 5 Albums with Most Songs:")
         cursor.execute("""
             SELECT Album.name, Artist.name, COUNT(Song.song_id) AS song_count
@@ -52,7 +59,7 @@ def print_database_insights(db_path="music_app.db"):
             print(f"{album} by {artist}: {count} song(s)")
         print("-" * 60)
 
-        # 4. Albums with no songs
+        # 5. Albums with no songs
         print("🛑 Albums with No Songs:")
         cursor.execute("""
             SELECT Album.name, Artist.name
@@ -70,7 +77,7 @@ def print_database_insights(db_path="music_app.db"):
                 print(f"{album} by {artist}")
         print("-" * 60)
 
-        # 5. Artists with no albums
+        # 6. Artists with no albums
         print("🎤 Artists with No Albums:")
         cursor.execute("""
             SELECT name FROM Artist
