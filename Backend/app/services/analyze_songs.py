@@ -21,7 +21,6 @@ conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
 
 def get_youtube_url(song_name: str, artist_name: str) -> Optional[str]:
-    """Search for a song on YouTube and return the URL"""
     search_query = f"{song_name} {artist_name} Audio"
     ydl_opts = {
         'quiet': True,
@@ -34,7 +33,6 @@ def get_youtube_url(song_name: str, artist_name: str) -> Optional[str]:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
     }
-    
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(f"ytsearch:{search_query}", download=False)
@@ -47,24 +45,16 @@ def get_youtube_url(song_name: str, artist_name: str) -> Optional[str]:
         return None
 
 def update_song_features(song_id: int, features: dict):
-    """Update song features in the database"""
     try:
-        # Print features for debugging
         print("Available features:", list(features.keys()))
-        
-        # Convert numpy arrays to bytes for storage if they exist
-        mel_spectrogram_bytes = features.get('mel_spectrogram', np.array([])).tobytes() if 'mel_spectrogram' in features else None
-        tonnetz_bytes = features.get('tonnetz', np.array([])).tobytes() if 'tonnetz' in features else None
-        
-        # Helper function to safely convert numpy arrays to float
+
         def safe_float(value, default=0):
             if isinstance(value, np.ndarray):
                 if value.size > 0:
-                    return float(value[0])  # Take first value for single values
+                    return float(value[0])
                 return default
             return float(value) if value is not None else default
-        
-        # Get all features with proper array handling
+
         duration = safe_float(features.get('duration', 0))
         tempo = safe_float(features.get('tempo', 0))
         spectral_centroid = safe_float(features.get('spectral_centroid', 0))
@@ -76,7 +66,7 @@ def update_song_features(song_id: int, features: dict):
         onset_strength = safe_float(features.get('onset_strength', 0))
         zero_crossing_rate = safe_float(features.get('zero_crossing_rate', 0))
         rms_energy = safe_float(features.get('rms_energy', 0))
-        
+
         cur.execute("""
             UPDATE Song SET
                 duration = ?,
@@ -89,9 +79,7 @@ def update_song_features(song_id: int, features: dict):
                 harmonic_ratio = ?,
                 onset_strength = ?,
                 zero_crossing_rate = ?,
-                rms_energy = ?,
-                mel_spectrogram = ?,
-                tonnetz = ?
+                rms_energy = ?
             WHERE song_id = ?
         """, (
             duration,
@@ -105,8 +93,6 @@ def update_song_features(song_id: int, features: dict):
             onset_strength,
             zero_crossing_rate,
             rms_energy,
-            mel_spectrogram_bytes,
-            tonnetz_bytes,
             song_id
         ))
         conn.commit()
@@ -117,10 +103,8 @@ def update_song_features(song_id: int, features: dict):
         return False
 
 def download_audio(url: str, output_path: str) -> bool:
-    """Download audio from YouTube URL with retry logic"""
     max_retries = 3
-    retry_delay = 5  # seconds
-    
+    retry_delay = 5
     for attempt in range(max_retries):
         try:
             ydl_opts = {
@@ -139,26 +123,21 @@ def download_audio(url: str, output_path: str) -> bool:
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
                 }
             }
-            
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
             return True
-            
         except Exception as e:
             print(f"Attempt {attempt + 1}/{max_retries} failed: {str(e)}")
             if attempt < max_retries - 1:
                 print(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
-                retry_delay *= 2  # Exponential backoff
+                retry_delay *= 2
             else:
                 print(f"Failed to download after {max_retries} attempts")
                 return False
-    
     return False
 
 def process_songs():
-    """Process all songs in the database that don't have features yet"""
-    # Initialize downloader and analyzer
     downloader = YouTubeDownloader()
     analyzer = AudioAnalyzer()
     
@@ -177,45 +156,37 @@ def process_songs():
     for i, song in enumerate(songs, 1):
         song_id, song_name, artist_name = song
         print(f"\n[{i}/{total}] Processing: {song_name} by {artist_name}")
-        
         try:
-            # Get YouTube URL
             video_url = get_youtube_url(song_name, artist_name)
             if not video_url:
                 continue
-                
-            # Download audio
+
             audio_path = downloader.download_audio(video_url)
             if not audio_path:
                 continue
-                
+
             try:
-                # Analyze audio
                 features = analyzer.analyze_file(audio_path)
                 if features:
-                    # Update database
                     if update_song_features(song_id, features):
                         print(f"✅ Successfully updated features for {song_name}")
                     else:
                         print(f"❌ Failed to update features for {song_name}")
             finally:
-                # Clean up downloaded file
                 try:
                     os.remove(audio_path)
                 except:
                     pass
-                
+
         except Exception as e:
             print(f"❌ Error processing {song_name}: {e}")
             continue
-            
-        # Sleep to avoid rate limiting
+
         time.sleep(2)
-    
-    # Clean up
+
     downloader.cleanup()
     conn.close()
     print("\n✅ Finished processing all songs")
 
 if __name__ == "__main__":
-    process_songs() 
+    process_songs()

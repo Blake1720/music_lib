@@ -32,7 +32,7 @@ def create_music_app_db():
     cursor.execute("""
     CREATE TABLE Artist (
         artist_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT
+        name TEXT UNIQUE
     );
     """)
 
@@ -42,6 +42,7 @@ def create_music_app_db():
         name TEXT,
         artist_id INTEGER,
         date_created DATETIME,
+        album_url TEXT UNIQUE,
         FOREIGN KEY (artist_id) REFERENCES Artist(artist_id)
     );
     """)
@@ -52,7 +53,6 @@ def create_music_app_db():
         name TEXT,
         album_id INTEGER,
         genre TEXT,
-        album_url TEXT,
         duration REAL,
         tempo REAL,
         spectral_centroid REAL,
@@ -64,9 +64,8 @@ def create_music_app_db():
         onset_strength REAL,
         zero_crossing_rate REAL,
         rms_energy REAL,
-        mel_spectrogram BLOB,
-        tonnetz BLOB,
-        FOREIGN KEY (album_id) REFERENCES Album(album_id)
+        FOREIGN KEY (album_id) REFERENCES Album(album_id),
+        UNIQUE (album_id, name)
     );
     """)
 
