@@ -48,18 +48,14 @@ class AudioAnalyzer:
             features['chroma_mean'] = np.mean(chroma)
             features['chroma_std'] = np.std(chroma)
 
-            # 5. Harmonic and Percussive Components
-            y_harmonic, y_percussive = librosa.effects.hpss(y)
-            features['harmonic_ratio'] = np.mean(y_harmonic) / (np.mean(y_harmonic) + np.mean(y_percussive))
-
-            # 6. Onset Strength
+            # 5. Onset Strength
             onset_env = librosa.onset.onset_strength(y=y, sr=sr)
             features['onset_strength'] = np.mean(onset_env)
 
-            # 7. Zero Crossing Rate
+            # 6. Zero Crossing Rate
             features['zero_crossing_rate'] = np.mean(librosa.feature.zero_crossing_rate(y))
 
-            # 8. RMS Energy
+            # 7. RMS Energy
             features['rms_energy'] = np.mean(librosa.feature.rms(y=y))
 
             logger.info(f"Successfully analyzed {file_path}")

@@ -62,7 +62,6 @@ def update_song_features(song_id: int, features: dict):
         spectral_contrast = safe_float(features.get('spectral_contrast', 0))
         chroma_mean = safe_float(features.get('chroma_mean', 0))
         chroma_std = safe_float(features.get('chroma_std', 0))
-        harmonic_ratio = safe_float(features.get('harmonic_ratio', 0))
         onset_strength = safe_float(features.get('onset_strength', 0))
         zero_crossing_rate = safe_float(features.get('zero_crossing_rate', 0))
         rms_energy = safe_float(features.get('rms_energy', 0))
@@ -76,7 +75,6 @@ def update_song_features(song_id: int, features: dict):
                 spectral_contrast = ?,
                 chroma_mean = ?,
                 chroma_std = ?,
-                harmonic_ratio = ?,
                 onset_strength = ?,
                 zero_crossing_rate = ?,
                 rms_energy = ?
@@ -89,7 +87,6 @@ def update_song_features(song_id: int, features: dict):
             spectral_contrast,
             chroma_mean,
             chroma_std,
-            harmonic_ratio,
             onset_strength,
             zero_crossing_rate,
             rms_energy,

@@ -60,7 +60,6 @@ def create_music_app_db():
         spectral_contrast REAL,
         chroma_mean REAL,
         chroma_std REAL,
-        harmonic_ratio REAL,
         onset_strength REAL,
         zero_crossing_rate REAL,
         rms_energy REAL,
