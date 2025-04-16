@@ -17,7 +17,6 @@ class Song(BaseModel):
     spectral_contrast: float
     chroma_mean: float
     chroma_std: float
-    harmonic_ratio: float
     onset_strength: float
     zero_crossing_rate: float
     rms_energy: float

@@ -25,7 +25,7 @@ class RecommendationService:
         # Get all songs and their features
         self.cursor.execute("""
             SELECT song_id, duration, tempo, spectral_centroid, spectral_rolloff,
-                   spectral_contrast, chroma_mean, chroma_std, harmonic_ratio,
+                   spectral_contrast, chroma_mean, chroma_std,
                    onset_strength, zero_crossing_rate, rms_energy
             FROM Song
             WHERE duration IS NOT NULL 
@@ -47,7 +47,6 @@ class RecommendationService:
                 row['spectral_contrast'],
                 row['chroma_mean'],
                 row['chroma_std'],
-                row['harmonic_ratio'],
                 row['onset_strength'],
                 row['zero_crossing_rate'],
                 row['rms_energy']
@@ -82,7 +81,6 @@ class RecommendationService:
             spectral_contrast=row['spectral_contrast'],
             chroma_mean=row['chroma_mean'],
             chroma_std=row['chroma_std'],
-            harmonic_ratio=row['harmonic_ratio'],
             onset_strength=row['onset_strength'],
             zero_crossing_rate=row['zero_crossing_rate'],
             rms_energy=row['rms_energy']
@@ -126,7 +124,6 @@ class RecommendationService:
             song.spectral_contrast,
             song.chroma_mean,
             song.chroma_std,
-            song.harmonic_ratio,
             song.onset_strength,
             song.zero_crossing_rate,
             song.rms_energy
@@ -207,7 +204,6 @@ class RecommendationService:
                     "spectral_contrast": 1.0,
                     "chroma_mean": 1.0,
                     "chroma_std": 1.0,
-                    "harmonic_ratio": 1.0,
                     "onset_strength": 1.0,
                     "zero_crossing_rate": 1.0,
                     "rms_energy": 1.0
@@ -271,7 +267,6 @@ class RecommendationService:
                     "spectral_contrast": 1.0,
                     "chroma_mean": 1.0,
                     "chroma_std": 1.0,
-                    "harmonic_ratio": 1.0,
                     "onset_strength": 1.0,
                     "zero_crossing_rate": 1.0,
                     "rms_energy": 1.0
