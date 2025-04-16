@@ -14,7 +14,7 @@
         - Unzip the file
         - Add the `bin` directory of your FFmpeg installation to your system PATH
         - Example: `C:\ffmpeg\bin`
-6. Run the app with `uvicorn main:app --reload`
+6. Run the app with 'uvicorn app.main:app --reload' from the Backend/ Directory
 
 # Database
 
@@ -27,6 +27,13 @@
 1. Run 'python -m app.Test_files.test_recommendations' to test the recommendations
 2. Run 'python -m app.Test_files.test_youtube_downloader' to test the youtube downloader
 3. Run 'python -m app.Test_files.test_audio_analysis' to test the audio analysis
+4. Run 'python -m app.Test_files.test_spotify_import' to test importing songs from Spotify
+
+
+# API Documentation
+
+1. Run `uvicorn app.main:app --reload` to start the server
+2. Go to `http://127.0.0.1:8000/docs` to view the API documentation
 
 # Frontend
 1. Download Node.js -- Required for frontend development

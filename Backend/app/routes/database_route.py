@@ -22,6 +22,7 @@ class SongResponse(BaseModel):
     name: str
     artist: str
     album: str
+    genre: Optional[str] = None
     duration: Optional[float] = None
     tempo: Optional[float] = None
     spectral_centroid: Optional[float] = None

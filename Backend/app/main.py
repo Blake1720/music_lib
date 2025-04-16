@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from typing import List, Optional
+import os
 
-from app.services.spotify_import_service import SpotifyImportService
-from app.services.recommendation_service import RecommendationService
+from .services.spotify_import_service import SpotifyImportService
+from .services.recommendation_service import RecommendationService
 
 app = FastAPI(
     title="Music Recommendation API",
@@ -20,6 +22,12 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
+# Get the absolute path to the public directory
+public_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public"))
+
+# Mount the public directory for serving static files
+app.mount("/public", StaticFiles(directory=public_dir), name="public")
+
 # Initialize services
 spotify_service = None
 recommendation_service = None
@@ -33,7 +41,7 @@ async def startup_event():
         recommendation_service = RecommendationService()
         
         # Import and include routers after services are initialized
-        from app.routes import database_route, recommendations, spotify_import
+        from .routes import database_route, recommendations, spotify_import
         
         # Make services available to the routers
         spotify_import.spotify_service = spotify_service

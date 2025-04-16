@@ -116,7 +116,7 @@ def display_all_songs() -> List[Dict[str, Any]]:
                 "Song Name": row["song_name"],
                 "Album": row["album_name"],
                 "Artist": row["artist_name"],
-                "Genre": row["genre"],
+                "Genre": row["genre"] if row["genre"] is not None else "None",
                 "Duration": f"{row['duration']:.2f}s" if row['duration'] else "N/A",
                 "Tempo": f"{row['tempo']:.1f}" if row['tempo'] else "N/A",
                 "Spectral Centroid": f"{row['spectral_centroid']:.2f}" if row['spectral_centroid'] else "N/A",

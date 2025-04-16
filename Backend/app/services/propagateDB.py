@@ -58,7 +58,7 @@ def insert_song(name, album_id, genre):
         INSERT OR IGNORE INTO Song (
             name, album_id, genre
         ) VALUES (?, ?, ?)""", (
-            name, album_id, genre
+            name, album_id, genre if genre else None
         ))
         return True
     except Exception as e:
@@ -74,7 +74,8 @@ def get_album_cover(artist_name, track_name):
             return results['data'][0]['album']['cover_medium']
     except Exception as e:
         print(f"Deezer album cover fetch failed: {e}")
-    return ""
+    # Return default album cover from public directory
+    return "/Backend/public/album_cover.jpg"
 
 def fetch_and_store_songs(limit=100):
     total_added = 0

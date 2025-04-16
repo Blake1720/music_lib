@@ -73,7 +73,7 @@ class SpotifyImportService:
         self.conn.commit()
         return self.cursor.lastrowid
 
-    def _get_or_create_album(self, album_name: str, artist_id: int) -> int:
+    def _get_or_create_album(self, album_name: str, artist_id: int, album_url: str = None) -> int:
         """Get album ID from database or create if not exists"""
         self.cursor.execute(
             "SELECT album_id FROM Album WHERE name = ? AND artist_id = ?",
@@ -84,9 +84,13 @@ class SpotifyImportService:
         if result:
             return result['album_id']
             
+        # Use default album cover if none provided
+        if not album_url:
+            album_url = "/Backend/public/album_cover.jpg"
+            
         self.cursor.execute(
-            "INSERT INTO Album (name, artist_id) VALUES (?, ?)",
-            (album_name, artist_id)
+            "INSERT INTO Album (name, artist_id, album_url) VALUES (?, ?, ?)",
+            (album_name, artist_id, album_url)
         )
         self.conn.commit()
         return self.cursor.lastrowid
@@ -169,12 +173,13 @@ class SpotifyImportService:
             song_name = track['name']
             artist_name = track['artists'][0]['name']
             album_name = track['album']['name']
+            album_url = track['album']['images'][0]['url'] if track['album']['images'] else "/Backend/public/album_cover.jpg"
             
             logger.info(f"Processing: {song_name} by {artist_name}")
             
             # Get or create artist and album
             artist_id = self._get_or_create_artist(artist_name)
-            album_id = self._get_or_create_album(album_name, artist_id)
+            album_id = self._get_or_create_album(album_name, artist_id, album_url)
             
             # Check if song already exists
             if self._song_exists(song_name, album_id):
@@ -209,6 +214,13 @@ class SpotifyImportService:
                 logger.info(f"Analyzing audio file: {audio_path}")
                 features = self.audio_analyzer.analyze_file(audio_path)
                 
+                # Get genre from Spotify artist
+                try:
+                    artist_data = self.spotify.artist(track['artists'][0]['id'])
+                    genre = artist_data['genres'][0] if artist_data['genres'] else None
+                except:
+                    genre = None
+                
                 # Insert into database
                 self.cursor.execute("""
                     INSERT INTO Song (
@@ -223,7 +235,7 @@ class SpotifyImportService:
                     features['spectral_contrast'], features['chroma_mean'],
                     features['chroma_std'], features['onset_strength'],
                     features['zero_crossing_rate'], features['rms_energy'],
-                    'unknown'  # Default genre
+                    genre  # Can be None if no genre found
                 ))
                 self.conn.commit()
                 
@@ -235,6 +247,7 @@ class SpotifyImportService:
                         "name": song_name,
                         "artist": artist_name,
                         "album": album_name,
+                        "genre": genre,
                         "features": features
                     }
                 }
