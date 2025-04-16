@@ -1,8 +1,8 @@
 '''
 This file defines the models for the songs and recommendations.
 '''
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field
+from typing import List, Optional, Union, Literal
 
 class Song(BaseModel):
     id: str
@@ -22,10 +22,21 @@ class Song(BaseModel):
     zero_crossing_rate: float
     rms_energy: float
 
-class RecommendationRequest(BaseModel):
+class SongBasedRequest(BaseModel):
+    """Request for song-based recommendations"""
+    type: Literal["song"] = "song"
     song_id: str
-    limit: int = 10
-    include_features: bool = False
+    limit: int = Field(default=10, ge=1, le=50)
+
+class ArtistBasedRequest(BaseModel):
+    """Request for artist-based recommendations"""
+    type: Literal["artist"] = "artist"
+    artist_id: int
+    limit: int = Field(default=10, ge=1, le=50)
+
+class RecommendationRequest(BaseModel):
+    """Union type that accepts either song-based or artist-based recommendation requests"""
+    request: Union[SongBasedRequest, ArtistBasedRequest]
 
 class RecommendationResponse(BaseModel):
     recommendations: List[Song]

@@ -2,7 +2,7 @@
 This file is used to recommend songs based on the k-d tree nearest neighbors algorithm.
 '''
 from app.models.song import Song, RecommendationResponse
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 import random
 import sqlite3
 import os
@@ -115,66 +115,154 @@ class RecommendationService:
         """, (song_id,))
         row = self.cursor.fetchone()
         return self._get_song_from_row(row) if row else None
+    
+    def _get_song_features(self, song: Song) -> np.ndarray:
+        """Extract features from a song into a numpy array"""
+        return np.array([
+            song.duration,
+            song.tempo,
+            song.spectral_centroid,
+            song.spectral_rolloff,
+            song.spectral_contrast,
+            song.chroma_mean,
+            song.chroma_std,
+            song.harmonic_ratio,
+            song.onset_strength,
+            song.zero_crossing_rate,
+            song.rms_energy
+        ])
 
-    async def get_recommendations(
+    async def _get_recommendations_by_features(
         self,
-        song_id: str,
+        features: np.ndarray,
         limit: int = 10,
-        include_features: bool = False
-    ) -> RecommendationResponse:
-        # Get the base song
-        base_song = await self.get_song(song_id)
-        if not base_song:
-            raise ValueError("Song not found")
-
-        # Get the index of the base song in our feature tree
-        base_song_idx = self.song_ids.index(int(song_id))
-        
-        # Get the base song's features and normalize them
-        base_features = [
-            base_song.duration,
-            base_song.tempo,
-            base_song.spectral_centroid,
-            base_song.spectral_rolloff,
-            base_song.spectral_contrast,
-            base_song.chroma_mean,
-            base_song.chroma_std,
-            base_song.harmonic_ratio,
-            base_song.onset_strength,
-            base_song.zero_crossing_rate,
-            base_song.rms_energy
-        ]
-        normalized_features = self._normalize_features(base_features)
+        exclude_song_id: Optional[str] = None
+    ) -> List[Song]:
+        """Get recommendations based on a feature vector"""
+        # Normalize the features
+        normalized_features = self._normalize_features(features)
         
         # Query the k-d tree for nearest neighbors
-        # We query for limit+1 because the closest match will be the song itself
+        # Add 1 to limit if we need to exclude a song
+        k = limit + 1 if exclude_song_id else limit
         distances, indices = self.feature_tree.query(
             normalized_features,
-            k=limit+1,
+            k=k,
             p=2  # Euclidean distance
         )
-        
-        # Remove the base song from results (it's the closest match to itself)
-        indices = indices[1:]  # Skip the first result (self)
         
         # Get the recommended songs
         recommended_song_ids = [self.song_ids[idx] for idx in indices]
         recommendations = []
         
         for rec_id in recommended_song_ids:
+            # Skip if this is the song we want to exclude
+            if exclude_song_id and str(rec_id) == exclude_song_id:
+                continue
+                
             self.cursor.execute("""
                 SELECT * FROM Song WHERE song_id = ?
             """, (rec_id,))
             row = self.cursor.fetchone()
             if row:
                 recommendations.append(self._get_song_from_row(row))
+                
+            if len(recommendations) >= limit:
+                break
+                
+        return recommendations
+
+    async def get_recommendations_by_song(
+        self,
+        song_id: str,
+        limit: int = 10
+    ) -> RecommendationResponse:
+        """Get recommendations for a specific song"""
+        # Get the base song
+        base_song = await self.get_song(song_id)
+        if not base_song:
+            raise ValueError("Song not found")
+
+        # Get the song's features
+        features = self._get_song_features(base_song)
+        
+        # Get recommendations excluding the base song
+        recommendations = await self._get_recommendations_by_features(
+            features,
+            limit=limit,
+            exclude_song_id=song_id
+        )
 
         return RecommendationResponse(
             recommendations=recommendations,
             metadata={
                 "base_song": base_song.title,
                 "total_recommendations": len(recommendations),
-                "algorithm": "k-d tree nearest neighbors",
+                "algorithm": "k-d tree nearest neighbors (song-based)",
+                "feature_weights": {
+                    "duration": 1.0,
+                    "tempo": 1.0,
+                    "spectral_centroid": 1.0,
+                    "spectral_rolloff": 1.0,
+                    "spectral_contrast": 1.0,
+                    "chroma_mean": 1.0,
+                    "chroma_std": 1.0,
+                    "harmonic_ratio": 1.0,
+                    "onset_strength": 1.0,
+                    "zero_crossing_rate": 1.0,
+                    "rms_energy": 1.0
+                }
+            }
+        )
+        
+    async def get_recommendations_by_artist(
+        self,
+        artist_id: int,
+        limit: int = 10
+    ) -> RecommendationResponse:
+        """Get recommendations based on an artist's average song features"""
+        # Get all songs by the artist
+        self.cursor.execute("""
+            SELECT s.* 
+            FROM Song s
+            JOIN Album al ON s.album_id = al.album_id
+            WHERE al.artist_id = ?
+            AND s.duration IS NOT NULL 
+            AND s.tempo IS NOT NULL
+            AND s.spectral_centroid IS NOT NULL
+        """, (artist_id,))
+        rows = self.cursor.fetchall()
+        
+        if not rows:
+            raise ValueError("No songs found for artist")
+            
+        # Get artist name for metadata
+        self.cursor.execute("""
+            SELECT name FROM Artist WHERE artist_id = ?
+        """, (artist_id,))
+        artist_row = self.cursor.fetchone()
+        artist_name = artist_row['name'] if artist_row else "Unknown Artist"
+            
+        # Convert rows to songs and extract features
+        songs = [self._get_song_from_row(row) for row in rows]
+        features_list = [self._get_song_features(song) for song in songs]
+        
+        # Calculate average features
+        average_features = np.mean(features_list, axis=0)
+        
+        # Get recommendations based on average features
+        recommendations = await self._get_recommendations_by_features(
+            average_features,
+            limit=limit
+        )
+
+        return RecommendationResponse(
+            recommendations=recommendations,
+            metadata={
+                "base_artist": artist_name,
+                "songs_analyzed": len(songs),
+                "total_recommendations": len(recommendations),
+                "algorithm": "k-d tree nearest neighbors (artist-based)",
                 "feature_weights": {
                     "duration": 1.0,
                     "tempo": 1.0,
