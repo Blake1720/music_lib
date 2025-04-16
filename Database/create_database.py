@@ -50,8 +50,8 @@ def create_music_app_db():
     cursor.execute("""
     CREATE TABLE Song (
         song_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        album_id INTEGER,
+        name TEXT NOT NULL,
+        album_id INTEGER NOT NULL,
         genre TEXT,
         duration REAL,
         tempo REAL,
@@ -63,8 +63,7 @@ def create_music_app_db():
         onset_strength REAL,
         zero_crossing_rate REAL,
         rms_energy REAL,
-        FOREIGN KEY (album_id) REFERENCES Album(album_id),
-        UNIQUE (album_id, name)
+        FOREIGN KEY (album_id) REFERENCES Album(album_id)
     );
     """)
 

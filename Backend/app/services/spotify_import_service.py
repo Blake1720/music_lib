@@ -221,6 +221,18 @@ class SpotifyImportService:
                 except:
                     genre = None
                 
+                # Convert all feature values to float
+                duration = float(features['duration']) if features.get('duration') is not None else None
+                tempo = float(features['tempo']) if features.get('tempo') is not None else None
+                spectral_centroid = float(features['spectral_centroid']) if features.get('spectral_centroid') is not None else None
+                spectral_rolloff = float(features['spectral_rolloff']) if features.get('spectral_rolloff') is not None else None
+                spectral_contrast = float(features['spectral_contrast']) if features.get('spectral_contrast') is not None else None
+                chroma_mean = float(features['chroma_mean']) if features.get('chroma_mean') is not None else None
+                chroma_std = float(features['chroma_std']) if features.get('chroma_std') is not None else None
+                onset_strength = float(features['onset_strength']) if features.get('onset_strength') is not None else None
+                zero_crossing_rate = float(features['zero_crossing_rate']) if features.get('zero_crossing_rate') is not None else None
+                rms_energy = float(features['rms_energy']) if features.get('rms_energy') is not None else None
+
                 # Insert into database
                 self.cursor.execute("""
                     INSERT INTO Song (
@@ -230,12 +242,12 @@ class SpotifyImportService:
                         rms_energy, genre
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    song_name, album_id, features['duration'], features['tempo'],
-                    features['spectral_centroid'], features['spectral_rolloff'],
-                    features['spectral_contrast'], features['chroma_mean'],
-                    features['chroma_std'], features['onset_strength'],
-                    features['zero_crossing_rate'], features['rms_energy'],
-                    genre  # Can be None if no genre found
+                    song_name, album_id, duration, tempo,
+                    spectral_centroid, spectral_rolloff,
+                    spectral_contrast, chroma_mean,
+                    chroma_std, onset_strength,
+                    zero_crossing_rate, rms_energy,
+                    genre
                 ))
                 self.conn.commit()
                 
@@ -248,7 +260,18 @@ class SpotifyImportService:
                         "artist": artist_name,
                         "album": album_name,
                         "genre": genre,
-                        "features": features
+                        "features": {
+                            "duration": duration,
+                            "tempo": tempo,
+                            "spectral_centroid": spectral_centroid,
+                            "spectral_rolloff": spectral_rolloff,
+                            "spectral_contrast": spectral_contrast,
+                            "chroma_mean": chroma_mean,
+                            "chroma_std": chroma_std,
+                            "onset_strength": onset_strength,
+                            "zero_crossing_rate": zero_crossing_rate,
+                            "rms_energy": rms_energy
+                        }
                     }
                 }
             finally:

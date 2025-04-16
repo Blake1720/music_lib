@@ -58,7 +58,7 @@ def test_spotify_import():
         service = SpotifyImportService(temp_dir=temp_dir)
         
         # Test with "Attack" by Thirty Seconds To Mars
-        spotify_url = "https://open.spotify.com/track/0lHSJ0ZP8uUPnJXhMdGjOK"
+        spotify_url = "https://open.spotify.com/track/2DyDyOW1hRYFFaMhBCAHJ9?si=ee4017aa915f488d"
         print(f"\nTesting import of track: {spotify_url}")
         
         # First import - should succeed
