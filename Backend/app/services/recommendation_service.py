@@ -40,19 +40,19 @@ class RecommendationService:
         # Create feature matrix
         features = np.array([
             [
-                row['duration'],
-                row['tempo'],
-                row['spectral_centroid'],
-                row['spectral_rolloff'],
-                row['spectral_contrast'],
-                row['chroma_mean'],
-                row['chroma_std'],
-                row['onset_strength'],
-                row['zero_crossing_rate'],
-                row['rms_energy']
+                float.fromhex(row['duration'].hex()) if isinstance(row['duration'], bytes) else float(row['duration']),
+                float.fromhex(row['tempo'].hex()) if isinstance(row['tempo'], bytes) else float(row['tempo']),
+                float.fromhex(row['spectral_centroid'].hex()) if isinstance(row['spectral_centroid'], bytes) else float(row['spectral_centroid']),
+                float.fromhex(row['spectral_rolloff'].hex()) if isinstance(row['spectral_rolloff'], bytes) else float(row['spectral_rolloff']),
+                float.fromhex(row['spectral_contrast'].hex()) if isinstance(row['spectral_contrast'], bytes) else float(row['spectral_contrast']),
+                float.fromhex(row['chroma_mean'].hex()) if isinstance(row['chroma_mean'], bytes) else float(row['chroma_mean']),
+                float.fromhex(row['chroma_std'].hex()) if isinstance(row['chroma_std'], bytes) else float(row['chroma_std']),
+                float.fromhex(row['onset_strength'].hex()) if isinstance(row['onset_strength'], bytes) else float(row['onset_strength']),
+                float.fromhex(row['zero_crossing_rate'].hex()) if isinstance(row['zero_crossing_rate'], bytes) else float(row['zero_crossing_rate']),
+                float.fromhex(row['rms_energy'].hex()) if isinstance(row['rms_energy'], bytes) else float(row['rms_energy'])
             ]
             for row in rows
-        ])
+        ], dtype=np.float64)
         
         # Normalize features to [0,1] range
         self.feature_min = features.min(axis=0)
