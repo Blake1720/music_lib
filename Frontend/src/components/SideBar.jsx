@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, Music, History, LogOut} from "lucide-react";
+import { Home, Music, LogOut} from "lucide-react";
 import { Link } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase"; // or your config path
@@ -15,7 +15,6 @@ const SideBar = ({ isOpen, setIsOpen }) => {
   const navItems = [
     { icon: <Home size={20} />, label: "Home", path: "/" },
     { icon: <Music size={20} />, label: "Playlists", path: "/playlists" },
-    { icon: <History size={20} />, label: "History", path: "/history" }
   ];
 
   return (

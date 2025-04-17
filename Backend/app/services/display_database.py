@@ -91,6 +91,19 @@ def display_all_songs() -> List[Dict[str, Any]]:
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    def convert_to_float(value):
+        if value is None:
+            return None
+        if isinstance(value, bytes):
+            try:
+                return float.fromhex(value.hex())
+            except Exception:
+                return None
+        try:
+            return float(value)
+        except Exception:
+            return None
+
     try:
         cursor.execute("""
             SELECT s.song_id, s.name as song_name, al.name as album_name, 
@@ -105,37 +118,35 @@ def display_all_songs() -> List[Dict[str, Any]]:
         """)
         songs = cursor.fetchall()
 
-        print("\n=== All Songs ===\n")
-        if not songs:
-            print("No songs found in the database")
-            return []
+        song_list = []
+        for row in songs:
+            song = {
+                "id": str(row["song_id"]),
+                "name": row["song_name"].decode("utf-8", errors="replace") if isinstance(row["song_name"], bytes) else row["song_name"],
+                "album": row["album_name"].decode("utf-8", errors="replace") if isinstance(row["album_name"], bytes) else row["album_name"],
+                "artist": row["artist_name"].decode("utf-8", errors="replace") if isinstance(row["artist_name"], bytes) else row["artist_name"],
+                "genre": row["genre"],
+                "duration": convert_to_float(row["duration"]),
+                "tempo": convert_to_float(row["tempo"]),
+                "spectral_centroid": convert_to_float(row["spectral_centroid"]),
+                "spectral_rolloff": convert_to_float(row["spectral_rolloff"]),
+                "spectral_contrast": convert_to_float(row["spectral_contrast"]),
+                "chroma_mean": convert_to_float(row["chroma_mean"]),
+                "chroma_std": convert_to_float(row["chroma_std"]),
+                "onset_strength": convert_to_float(row["onset_strength"]),
+                "zero_crossing_rate": convert_to_float(row["zero_crossing_rate"]),
+                "rms_energy": convert_to_float(row["rms_energy"]),
+            }
+            song_list.append(song)
 
-        song_list = [
-            {
-                "ID": row["song_id"],
-                "Song Name": row["song_name"],
-                "Album": row["album_name"],
-                "Artist": row["artist_name"],
-                "Genre": row["genre"] if row["genre"] is not None else "None",
-                "Duration": f"{row['duration']:.2f}s" if row['duration'] else "N/A",
-                "Tempo": f"{row['tempo']:.1f}" if row['tempo'] else "N/A",
-                "Spectral Centroid": f"{row['spectral_centroid']:.2f}" if row['spectral_centroid'] else "N/A",
-                "Spectral Rolloff": f"{row['spectral_rolloff']:.2f}" if row['spectral_rolloff'] else "N/A",
-                "Spectral Contrast": f"{row['spectral_contrast']:.2f}" if row['spectral_contrast'] else "N/A",
-                "Chroma Mean": f"{row['chroma_mean']:.2f}" if row['chroma_mean'] else "N/A",
-                "Chroma Std": f"{row['chroma_std']:.2f}" if row['chroma_std'] else "N/A",
-                "Onset Strength": f"{row['onset_strength']:.2f}" if row['onset_strength'] else "N/A",
-                "Zero Crossing": f"{row['zero_crossing_rate']:.4f}" if row['zero_crossing_rate'] else "N/A",
-                "RMS Energy": f"{row['rms_energy']:.6f}" if row['rms_energy'] else "N/A",
-            } for row in songs
-        ]
-        print(tabulate(song_list, headers="keys", tablefmt="grid"))
         return song_list
-    except sqlite3.OperationalError as e:
-        print(f"Error accessing songs table: {e}")
+
+    except Exception as e:
+        print("🔥 Error in display_all_songs:", e)
         return []
     finally:
         conn.close()
+
 
 def display_database_summary():
     conn = get_db_connection()

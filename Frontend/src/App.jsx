@@ -4,8 +4,9 @@ import NavBar from "./components/NavBar";
 import SideBar from "./components/SideBar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import History from "./pages/History"
 import SearchResults from "./pages/SearchResults";
+import AlbumPage from "./pages/AlbumPage"
+import ArtistPage from "./pages/ArtistPage"
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
@@ -47,9 +48,10 @@ function App() {
               <>
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/history" element={<History />} />
                 <Route path="/playlists" element={<Playlists />} />
-                <Route path="/playlists/:playlistId" element={<PlaylistPage />} />
+                <Route path="/playlists/:playlistName" element={<PlaylistPage />} />
+                <Route path="/albums/:albumId" element={<AlbumPage />} />
+                <Route path="/artists/:artistName" element={<ArtistPage />} />
                 <Route path="/search" element={<SearchResults />} />
               </Routes>
               </>

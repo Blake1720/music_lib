@@ -17,6 +17,16 @@ const Register = () => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       await updateProfile(userCredential.user, { displayName: username });
+      await fetch("http://localhost:8000/account/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: username,
+          age: null,
+        }),
+      });
       navigate("/");
     } catch (err) {
       setError(err.message);

@@ -1,11 +1,15 @@
+from .routes import account
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from typing import List, Optional
+from dotenv import load_dotenv
 import os
 
 from .services.spotify_import_service import SpotifyImportService
 from .services.recommendation_service import RecommendationService
+
+load_dotenv()
 
 app = FastAPI(
     title="Music Recommendation API",
@@ -50,6 +54,7 @@ async def startup_event():
         # Include routers
         app.include_router(recommendations.router, prefix="/api/v1", tags=["recommendations"])
         app.include_router(database_route.router, prefix="/database", tags=["database"])
+        app.include_router(account.router, prefix="/account", tags=["account"])
         app.include_router(spotify_import.router, prefix="/api/v1/spotify", tags=["spotify"])
     except Exception as e:
         print(f"Error initializing services: {e}")

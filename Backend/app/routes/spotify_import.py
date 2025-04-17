@@ -32,7 +32,7 @@ async def import_spotify_song(request: SpotifyImportRequest):
     
     try:
         logger.info(f"Importing song from Spotify URL: {request.spotify_url}")
-        song_id = spotify_service.import_song(request.spotify_url, request.user_id)
+        song_id = spotify_service.import_song(request.spotify_url)
         return SpotifyImportResponse(
             success=True,
             message="Song imported successfully",

@@ -1,69 +1,162 @@
-import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { searchDatabase } from "../data/mockSearchResults";
-
+import { useLocation } from "react-router-dom";
+import SongCard from "../components/SongCard";
+import ArtistCard from "../components/ArtistCard";
+import AlbumCard from "../components/AlbumCard";
+import { auth } from "../firebase";
+import ConfirmModal from "../components/GenerateModal";
 const SearchResults = () => {
   const { search } = useLocation(); // ?q=...
   const query = new URLSearchParams(search).get("q") || "";
   const [results, setResults] = useState({ artists: [], albums: [], songs: [] });
-
+  const [loading, setLoading] = useState(true);
+  const user = auth.currentUser;
+  const username = user?.displayName;
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  
+  const handleCardClick = (item) => {
+    setSelectedItem(item);
+    setShowModal(true);
+  };
+  
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedItem(null);
+  };
+  
+  const handleGenerate = async () => {
+    if (!selectedItem || !selectedItem.id) {
+      console.error("No song selected.");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/songs/generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          song_id: selectedItem.id,
+          name: `${selectedItem.title || selectedItem.name}`,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to generate playlist");
+      }
+  
+      const result = await response.json();
+      console.log("Playlist created!", result);
+  
+    } catch (error) {
+      console.error("Error generating playlist:", error.message);
+    } finally {
+      setShowModal(false);
+      setSelectedItem(null);
+    }
+  };
   useEffect(() => {
-    if (query.trim() !== "") {
-      const res = searchDatabase(query);
-      setResults(res);
+    const fetchSearchResults = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/database/search?q=${encodeURIComponent(query)}`);
+        if (!res.ok) throw new Error("Failed to fetch search results");
+
+        const data = await res.json();
+        setResults({
+          artists: data.artists || [],
+          albums: data.albums || [],
+          songs: data.songs || [],
+        });
+      } catch (err) {
+        console.error("Error fetching search results:", err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (query) {
+      fetchSearchResults();
     }
   }, [query]);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white px-6 py-10 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Search results for: <span className="text-green-400">{query}</span></h1>
+    <div className="flex justify-center min-h-screen text-white px-4 py-10">
+      <div className="w-full max-w-7xl">
+        {/* Modal */}
+        {showModal && (
+          <ConfirmModal
+            title={`Generate playlist for ${selectedItem.title}?`}
+            onConfirm={handleGenerate}
+            onCancel={handleCloseModal}
+          />
+        )}
+        <h1 className="text-3xl font-bold mb-8">
+          Search Results for "{query}"
+        </h1>
 
-      {results.artists.length > 0 && (
-        <>
-          <h2 className="text-xl font-semibold mb-8">Artists</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-10">
-            {results.artists.map((a) => (
-              <div key={a.id} className="bg-neutral-900 hover:bg-neutral-800 p-4 rounded-lg text-center">
-                <img src={a.image} alt={a.name} className="w-24 h-24 mx-auto rounded-full mb-2 object-cover" />
-                <p className="text-sm font-medium">{a.name}</p>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+        {/* Songs */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold mb-4">Songs</h2>
+          {results.songs.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+              {results.songs.map((song) => (
+                <SongCard
+                  onCardClick={handleCardClick}
+                  key={song.id}
+                  id={song.id}
+                  title={song.name}
+                  artist={song.artist}
+                  image={song.image || `https://placehold.co/400x400?text=${song.name}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-zinc-500">No matching songs.</p>
+          )}
+        </section>
 
-      {results.albums.length > 0 && (
-        <>
-          <h2 className="text-xl font-semibold mb-8">Albums</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-10">
-            {results.albums.map((al) => (
-              <div key={al.id} className="bg-neutral-900 hover:bg-neutral-800 p-4 rounded-lg text-center">
-                <img src={al.image} alt={al.name} className="w-24 h-24 mx-auto rounded-md mb-2 object-cover" />
-                <p className="text-sm font-medium">{al.name}</p>
-                <p className="text-xs text-zinc-400">{al.artist}</p>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+        {/* Artists */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold mb-4">Artists</h2>
+          {results.artists.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+              {results.artists.map((artist) => (
+                <ArtistCard
+                  key={artist.id}
+                  id={artist.id}
+                  name={artist.name}
+                  image={artist.image || "https://placehold.co/400x400?text=Artist"}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-zinc-500">No matching artists.</p>
+          )}
+        </section>
 
-      {results.songs.length > 0 && (
-        <>
-          <h2 className="text-xl font-semibold mb-8">Songs</h2>
-          <div className="space-y-3">
-            {results.songs.map((song) => (
-              <div key={song.id} className="bg-neutral-900 hover:bg-neutral-800 p-4 rounded-lg">
-                <p className="text-sm font-semibold">{song.title}</p>
-                <p className="text-xs text-zinc-400">{song.artist}</p>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {results.artists.length === 0 && results.albums.length === 0 && results.songs.length === 0 && (
-        <p className="text-zinc-400 mt-10">No results found.</p>
-      )}
+        {/* Albums */}
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">Albums</h2>
+          {results.albums.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+              {results.albums.map((album) => (
+                <AlbumCard
+                  key={album.id}
+                  id={album.id}
+                  name={album.name}
+                  artist={album.artist}
+                  image={album.image || `https://placehold.co/400x400?text=${encodeURIComponent(album.name)}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-zinc-500">No matching albums.</p>
+          )}
+        </section>
+      </div>
     </div>
   );
 };

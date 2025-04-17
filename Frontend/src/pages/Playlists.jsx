@@ -1,37 +1,37 @@
+import { useEffect, useState } from "react";
+import { auth } from "../firebase";
 import PlaylistCard from "../components/PlaylistCard";
 
-const playlists = [
-  {
-    id: "1",
-    name: "Chill Vibes",
-    description: "Lo-fi and relaxing beats",
-    image: "https://placehold.co/100x100",
-    url: "/playlists/1",
-  },
-  {
-    id: "2",
-    name: "Workout Hits",
-    description: "Pump-up tracks to keep you going",
-    image: "https://placehold.co/100x100",
-    url: "/playlists/2",
-  },
-  {
-    id: "3",
-    name: "Throwback Jams",
-    description: "Hits from the 90s and 2000s",
-    image: "https://placehold.co/100x100",
-    url: "/playlists/3",
-  },
-  {
-    id: "4",
-    name: "Focus Mode",
-    description: "Instrumental and ambient sounds",
-    image: "https://placehold.co/100x100",
-    url: "/playlists/4",
-  },
-];
-
 const Playlists = () => {
+  const [playlists, setPlaylists] = useState([]);
+  const username = auth.currentUser?.displayName;
+
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      if (!username) return;
+
+      try {
+        const response = await fetch(`http://localhost:8000/database/playlists?username=${encodeURIComponent(username)}`);
+        if (!response.ok) throw new Error("Failed to fetch playlists");
+
+        const data = await response.json();
+        const enriched = data.playlists.map((p, index) => ({
+          id: index.toString(),
+          name: p.name,
+          description: `${p.song_count} song(s)`,
+          image: `https://placehold.co/100x100?text=${encodeURIComponent(p.name)}`,
+          url: `/playlists/${p.name}`
+        }));
+
+        setPlaylists(enriched);
+      } catch (err) {
+        console.error("Error loading playlists:", err.message);
+      }
+    };
+
+    fetchPlaylists();
+  }, [username]);
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white px-6 py-10">
       <div className="max-w-7xl mx-auto">

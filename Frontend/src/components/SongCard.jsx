@@ -1,22 +1,56 @@
-import React from 'react';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
-const SongCard = ({ image, title, artist }) => {
+const SongCard = ({ id, image, title, artist, onCardClick }) => {
+  const navigate = useNavigate();
+  const [clicked, setClicked] = useState(false);
+
+  const handleArtistClick = (e) => {
+    e.stopPropagation();
+    navigate(`/artists/${encodeURIComponent(artist)}`);
+  };
+
+  const handleClick = () => {
+    if (clicked) {
+      onCardClick?.({ id, title, artist });
+    } else {
+      setClicked(true);
+      setTimeout(() => setClicked(false), 1000);
+    }
+  };
+  
+
   return (
-    <div className="w-full bg-neutral-900 hover:bg-neutral-800 transition duration-200 p-1 rounded-xl cursor-pointer shadow-md hover:shadow-lg group">
+    <div
+    onClick={handleClick}
+    className={`w-full bg-neutral-900 hover:bg-neutral-800 transition duration-200 p-1 rounded-xl cursor-pointer shadow-md hover:shadow-lg group border ${clicked ? "border-green-400" : "border-transparent"}`}
+
+
+      >
       {/* Album Art */}
       <div className="relative w-full aspect-square overflow-hidden rounded-lg">
         <img
-          src={image || "https://placehold.co/400x400"}
+          src={image || `https://placehold.co/400x400?text=${title}`}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => (e.target.src = "https://placehold.co/400x400")}
+          onError={(e) => (e.target.src = "https://placehold.co/400x400?text=Song")}
         />
       </div>
 
       {/* Song Info */}
       <div className="mt-4">
-        <h3 className="text-white text-sm font-semibold truncate">{title}</h3>
-        <p className="text-zinc-400 text-xs truncate">{artist}</p>
+        <h3
+          className="text-white text-sm font-semibold truncate cursor-pointer"
+        >
+          {title}
+        </h3>
+        <p
+          className="text-zinc-400 text-xs truncate hover:text-green-400 hover:underline cursor-pointer"
+          onClick={handleArtistClick}
+        >
+          {artist}
+        </p>
       </div>
     </div>
   );
