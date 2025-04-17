@@ -1,10 +1,11 @@
 '''
 This file creates the routes for the recommendations and song retrieval.
 '''
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Body
 from pydantic import BaseModel
 from typing import List, Optional
 import sqlite3
+import random
 import os
 from typing import Dict, Any
 from datetime import datetime
@@ -21,8 +22,14 @@ router = APIRouter()
 
 # Models
 
-class GeneratePlaylistRequest(BaseModel):
+class GenerateSongPlaylistRequest(BaseModel):
     song_id: str
+    username: str
+    name: str
+    limit: Optional[int] = 10
+
+class GenerateArtistPlaylistRequest(BaseModel):
+    artist_name: str
     username: str
     name: str
     limit: Optional[int] = 10
@@ -99,7 +106,7 @@ async def get_artist_recommendations(artist_id: int, limit: Optional[int] = 10) 
 
 @router.post("/songs/generate")
 async def make_song_recommendations(
-    request: GeneratePlaylistRequest
+    request: GenerateSongPlaylistRequest
 ):
     """Get recommendations based on a specific song and generate a playlist"""
     song_id = request.song_id
@@ -170,65 +177,79 @@ async def make_song_recommendations(
     }
 
 @router.post("/artists/generate")
-async def make_artist_recommendations(
-    request: GeneratePlaylistRequest
-):
-    """Get recommendations based on a specific song and generate a playlist"""
-    song_id = request.song_id
-    username = request.username
-    name = request.name
-    limit = request.limit
+async def make_artist_recommendations(request: GenerateArtistPlaylistRequest):
+    print("Incoming request:", request)
 
     if not recommendation_service:
+        print("Recommendation service not initialized")
         raise HTTPException(status_code=503, detail="Recommendation service not initialized")
-    
-    try:
-        recommendations_response = await recommendation_service.get_recommendations_by_artist(song_id, limit=limit)
-        songs = recommendations_response.recommendations
 
+    try:
         # Connect to DB
         root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         db_path = os.path.join(root_dir, "../Database/music_app.db")
+        playlist_name = f"{request.name} #{random.randint(1000, 9999)}"
+        print("Connecting to DB:", db_path)
         conn = sqlite3.connect(db_path)
-
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM User WHERE name = ?", (username,))
-        row = cursor.fetchone()
-        if not row:
+
+        # Get artist_id
+        print("Looking up artist:", request.artist_name)
+        cursor.execute("SELECT artist_id FROM Artist WHERE name = ?", (request.artist_name,))
+        artist_row = cursor.fetchone()
+        if not artist_row:
+            print("Artist not found:", request.artist_name)
+            raise ValueError("Artist not found")
+        artist_id = artist_row[0]
+        print("Artist ID:", artist_id)
+
+        # Get user_id
+        print("Looking up user:", request.username)
+        cursor.execute("SELECT user_id FROM User WHERE name = ?", (request.username,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            print("User not found:", request.username)
             raise ValueError("Username not found")
-        
-        user_id = row[0]
+        user_id = user_row[0]
+        print("User ID:", user_id)
 
-        try:
-            # Insert playlist
+        # Get recommendations
+        print("Getting recommendations...")
+        recommendations_response = await recommendation_service.get_recommendations_by_artist(artist_id, limit=request.limit)
+        songs = recommendations_response.recommendations
+        print(f"Got {len(songs)} recommendations")
+
+        # Store playlist
+        print("Inserting playlist...")
+        cursor.execute("""
+            INSERT INTO Playlist (user_id, name, date_created)
+            VALUES (?, ?, ?)
+        """, (user_id, request.name, datetime.now()))
+
+        for song in songs:
             cursor.execute("""
-                INSERT INTO Playlist (user_id, name, date_created)
+                INSERT INTO Playlist_Song (user_id, playlist_name, song_id)
                 VALUES (?, ?, ?)
-            """, (user_id, name, datetime.now()))
+            """, (user_id, request.name, song.id))
 
-            # Insert songs into playlist
-            for song in songs:
-                cursor.execute("""
-                    INSERT INTO Playlist_Song (user_id, playlist_name, song_id)
-                    VALUES (?, ?, ?)
-                """, (user_id, name, song.id))
-            
-            conn.commit()
+        conn.commit()
+        print("Playlist inserted successfully.")
 
-        except sqlite3.IntegrityError as e:
-            raise ValueError(f"Failed to store playlist: {str(e)}")
-
-        finally:
-            conn.close()
-
+    except sqlite3.IntegrityError as e:
+        print("SQL IntegrityError:", e)
+        raise HTTPException(status_code=400, detail=f"Playlist insert error: {str(e)}")
     except ValueError as e:
+        print("ValueError:", e)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        print("Unhandled Exception:", e)
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
 
     return {
         "playlist": {
-            "name": name,
+            "name": request.name,
             "user_id": user_id,
             "songs": [song.title for song in songs],
             "created_at": str(datetime.now())
