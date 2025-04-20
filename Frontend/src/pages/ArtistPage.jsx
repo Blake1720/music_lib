@@ -41,10 +41,10 @@ const ArtistPage = () => {
       }
   
       const result = await response.json();
-      console.log("Playlist created!", result);
+      alert(`Playlist created successfully!`);
   
     } catch (error) {
-      console.error("Error generating playlist:", error.message);
+      alert(`Playlist already exists!`);
     } finally {
       setShowModal(false);
     }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { auth } from "../firebase";
 import SongList from "../components/SongList";
+import ConfirmModal from "../components/GenerateModal";
 
 const PlaylistPage = () => {
   const { playlistName } = useParams();
@@ -10,7 +11,18 @@ const PlaylistPage = () => {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [playlistInfo, setPlaylistInfo] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  
+  const handleCardClick = (item) => {
+    setSelectedItem(item);
+    setShowModal(true);
+  };
 
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedItem(null);
+  };
   useEffect(() => {
     const fetchSongs = async () => {
       if (!username) return;
@@ -38,6 +50,34 @@ const PlaylistPage = () => {
     fetchSongs();
   }, [playlistName, username]);
 
+  const handleGenerate = async () => {
+    if (!selectedItem || !selectedItem.id || !username) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/songs/generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          song_id: selectedItem.id,
+          name: `${selectedItem.title || selectedItem.name}`,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate playlist");
+
+      const result = await response.json();
+      alert(`Playlist created successfully!`);
+    } catch (error) {
+      alert(`Playlist already exists!`);
+    } finally {
+      setShowModal(false);
+      setSelectedItem(null);
+    }
+  };
+
   if (loading) {
     return <div className="text-white p-10">Loading playlist...</div>;
   }
@@ -49,6 +89,14 @@ const PlaylistPage = () => {
   return (
     <div className="min-h-screen bg-neutral-950 text-white px-6 py-10">
       <div className="max-w-4xl mx-auto">
+        {/* Modal */}
+        {showModal && (
+          <ConfirmModal
+            title={`Generate playlist from "${selectedItem.title}"?`}
+            onConfirm={handleGenerate}
+            onCancel={handleCloseModal}
+          />
+        )}
         {/* Header */}
         <div className="flex items-center gap-6 mb-10">
           <img
@@ -62,7 +110,16 @@ const PlaylistPage = () => {
         </div>
 
         {/* Song List */}
-        <SongList songs={songs} />
+        {songs.map((song) => (
+            <SongList
+              onCardClick={handleCardClick}
+              key={song.id}
+              id={song.id}
+              title={song.name}
+              artist={song.artist}
+              image={`https://placehold.co/400x400?text=${song.name}`}
+            />
+        ))}
       </div>
     </div>
   );

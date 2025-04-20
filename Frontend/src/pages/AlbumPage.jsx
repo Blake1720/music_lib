@@ -1,17 +1,33 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { auth } from "../firebase";
+import ConfirmModal from "../components/GenerateModal";
 import SongList from "../components/SongList";
 
 const AlbumPage = () => {
   const { albumId } = useParams();
   const [album, setAlbum] = useState(null);
   const [loading, setLoading] = useState(true);
+  const user = auth.currentUser;
+  const username = user?.displayName;
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  
+  const handleCardClick = (item) => {
+    setSelectedItem(item);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedItem(null);
+  };
 
   useEffect(() => {
     const fetchAlbums = async () => {
       try {
         const response = await fetch(`http://localhost:8000/database/albums/${albumId}/songs`);
-        if (!response.ok) throw new Error("Failed to fetch albums");
+        if (!response.ok) throw new Error("Failed to fetch album");
 
         const data = await response.json();
         setAlbum(data || null);
@@ -25,17 +41,49 @@ const AlbumPage = () => {
     fetchAlbums();
   }, [albumId]);
 
-  if (loading) {
-    return <div className="text-white p-10">Loading album...</div>;
-  }
+  const handleGenerate = async () => {
+    if (!selectedItem || !selectedItem.id || !username) return;
 
-  if (!album) {
-    return <div className="text-white p-10">Album not found.</div>;
-  }
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/songs/generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          song_id: selectedItem.id,
+          name: `${selectedItem.title || selectedItem.name}`,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate playlist");
+
+      const result = await response.json();
+      alert(`Playlist created successfully!`);
+    } catch (error) {
+      alert(`Playlist already exists!`);
+    } finally {
+      setShowModal(false);
+      setSelectedItem(null);
+    }
+  };
+
+  if (loading) return <div className="text-white p-10">Loading album...</div>;
+  if (!album) return <div className="text-white p-10">Album not found.</div>;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white px-6 py-10">
       <div className="max-w-4xl mx-auto">
+        {/* Modal */}
+        {showModal && (
+          <ConfirmModal
+            title={`Generate playlist from "${selectedItem.title}"?`}
+            onConfirm={handleGenerate}
+            onCancel={handleCloseModal}
+          />
+        )}
+
         {/* Header */}
         <div className="flex items-center gap-6 mb-10">
           <img
@@ -50,7 +98,16 @@ const AlbumPage = () => {
         </div>
 
         {/* Song List */}
-        <SongList songs={album.songs} />
+        {album.songs.map((song) => (
+            <SongList
+              onCardClick={handleCardClick}
+              key={song.id}
+              id={song.id}
+              title={song.name}
+              artist={song.artist}
+              image={`https://placehold.co/400x400?text=${song.name}`}
+            />
+        ))}
       </div>
     </div>
   );
