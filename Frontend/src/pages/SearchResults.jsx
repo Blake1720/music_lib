@@ -14,6 +14,10 @@ const SearchResults = () => {
   const username = user?.displayName;
   const [selectedItem, setSelectedItem] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [minSongs, setMinSongs] = useState(null);
+  const [sortBy, setSortBy] = useState(null);
+  const [albumSort, setAlbumSort] = useState(null);
+  const [songSort, setSongSort] = useState(null);
   
   const handleCardClick = (item) => {
     setSelectedItem(item);
@@ -61,7 +65,21 @@ const SearchResults = () => {
   useEffect(() => {
     const fetchSearchResults = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/database/search?q=${encodeURIComponent(query)}`);
+        let url = `http://localhost:8000/database/search?q=${encodeURIComponent(query)}`;
+        if (minSongs !== null) {
+          url += `&min_songs=${minSongs}`;
+        }
+        if (sortBy) {
+          url += `&sort_by=${sortBy}`;
+        }
+        if (albumSort) {
+          url += `&album_sort=${albumSort}`;
+        }
+        if (songSort) {
+          url += `&song_sort=${songSort}`;
+        }
+        
+        const res = await fetch(url);
         if (!res.ok) throw new Error("Failed to fetch search results");
 
         const data = await res.json();
@@ -80,7 +98,7 @@ const SearchResults = () => {
     if (query) {
       fetchSearchResults();
     }
-  }, [query]);
+  }, [query, minSongs, sortBy, albumSort, songSort]);
 
   return (
     <div className="flex justify-center min-h-screen text-white px-4 py-10">
@@ -99,7 +117,18 @@ const SearchResults = () => {
 
         {/* Songs */}
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">Songs</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">Songs</h2>
+            <select
+              value={songSort || ""}
+              onChange={(e) => setSongSort(e.target.value || null)}
+              className="bg-neutral-800 text-white px-3 py-1 rounded-lg"
+            >
+              <option value="">Sort by name</option>
+              <option value="name_asc">A to Z</option>
+              <option value="name_desc">Z to A</option>
+            </select>
+          </div>
           {results.songs.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
               {results.songs.map((song) => (
@@ -120,7 +149,32 @@ const SearchResults = () => {
 
         {/* Artists */}
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">Artists</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">Artists</h2>
+            <div className="flex items-center gap-4">
+              <select
+                value={minSongs || ""}
+                onChange={(e) => setMinSongs(e.target.value ? Number(e.target.value) : null)}
+                className="bg-neutral-800 text-white px-3 py-1 rounded-lg"
+              >
+                <option value="">Any number of songs</option>
+                <option value="1">At least 1 song</option>
+                <option value="5">At least 5 songs</option>
+                <option value="10">At least 10 songs</option>
+              </select>
+              <select
+                value={sortBy || ""}
+                onChange={(e) => setSortBy(e.target.value || null)}
+                className="bg-neutral-800 text-white px-3 py-1 rounded-lg"
+              >
+                <option value="">Sort by name</option>
+                <option value="name_asc">A to Z</option>
+                <option value="name_desc">Z to A</option>
+                <option value="song_count_desc">Most songs first</option>
+                <option value="song_count_asc">Fewest songs first</option>
+              </select>
+            </div>
+          </div>
           {results.artists.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
               {results.artists.map((artist) => (
@@ -128,7 +182,8 @@ const SearchResults = () => {
                   key={artist.id}
                   id={artist.id}
                   name={artist.name}
-                  image={artist.image || "https://placehold.co/400x400?text=Artist"}
+                  songCount={artist.song_count}
+                  image={artist.image || "/album_cover.jpg"}
                 />
               ))}
             </div>
@@ -139,7 +194,20 @@ const SearchResults = () => {
 
         {/* Albums */}
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Albums</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">Albums</h2>
+            <select
+              value={albumSort || ""}
+              onChange={(e) => setAlbumSort(e.target.value || null)}
+              className="bg-neutral-800 text-white px-3 py-1 rounded-lg"
+            >
+              <option value="">Sort by name</option>
+              <option value="name_asc">A to Z</option>
+              <option value="name_desc">Z to A</option>
+              <option value="song_count_desc">Most songs first</option>
+              <option value="song_count_asc">Fewest songs first</option>
+            </select>
+          </div>
           {results.albums.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
               {results.albums.map((album) => (
@@ -148,6 +216,7 @@ const SearchResults = () => {
                   id={album.id}
                   name={album.name}
                   artist={album.artist}
+                  songCount={album.song_count}
                   image={album.url || `/album_cover.jpg`}
                 />
               ))}

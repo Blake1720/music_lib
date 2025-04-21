@@ -256,7 +256,13 @@ async def get_all_data():
 
 
 @router.get("/search", response_model=SearchResults)
-async def search_database(q: str = Query(..., description="Search query")):
+async def search_database(
+    q: str = Query(..., description="Search query"),
+    min_songs: Optional[int] = Query(None, description="Minimum number of songs for artists"),
+    sort_by: Optional[str] = Query(None, description="Sort by: 'song_count_asc', 'song_count_desc', 'name_asc', 'name_desc'"),
+    album_sort: Optional[str] = Query(None, description="Sort albums by: 'song_count_asc', 'song_count_desc', 'name_asc', 'name_desc'"),
+    song_sort: Optional[str] = Query(None, description="Sort songs by: 'name_asc', 'name_desc'")
+):
     """Search for matching artists, albums, and songs by name."""
     try:
         query = q.lower()
@@ -270,41 +276,78 @@ async def search_database(q: str = Query(..., description="Search query")):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Get matching artists
-        cursor.execute("""
-            SELECT artist_id, name
-            FROM Artist
-            WHERE LOWER(name) LIKE ?
-        """, (f"%{query}%",))
+        # Get matching artists with song counts
+        artist_query = """
+            SELECT ar.artist_id, ar.name,
+                   COUNT(DISTINCT s.song_id) as song_count
+            FROM Artist ar
+            LEFT JOIN Album al ON ar.artist_id = al.artist_id
+            LEFT JOIN Song s ON al.album_id = s.album_id
+            WHERE LOWER(ar.name) LIKE ?
+            GROUP BY ar.artist_id, ar.name
+        """
+        
+        # Add HAVING clause if min_songs is specified
+        if min_songs is not None:
+            artist_query += f" HAVING song_count >= {min_songs}"
+        
+        # Add ORDER BY clause based on sort_by parameter
+        if sort_by == "song_count_desc":
+            artist_query += " ORDER BY song_count DESC, name ASC"
+        elif sort_by == "song_count_asc":
+            artist_query += " ORDER BY song_count ASC, name ASC"
+        elif sort_by == "name_desc":
+            artist_query += " ORDER BY name DESC"
+        elif sort_by == "name_asc":
+            artist_query += " ORDER BY name ASC"
+        
+        cursor.execute(artist_query, (f"%{query}%",))
         artists_rows = cursor.fetchall()
         matching_artists = [
             ArtistResponse(
                 id=str(row["artist_id"]),
-                name=row["name"]
+                name=row["name"],
+                song_count=row["song_count"]
             )
             for row in artists_rows
         ]
 
         # Get matching albums with URLs
-        cursor.execute("""
-            SELECT a.album_id, a.name, ar.name as artist_name, a.album_url
+        album_query = """
+            SELECT a.album_id, a.name, ar.name as artist_name, a.album_url,
+                   COUNT(s.song_id) as song_count
             FROM Album a
             JOIN Artist ar ON a.artist_id = ar.artist_id
+            LEFT JOIN Song s ON a.album_id = s.album_id
             WHERE LOWER(a.name) LIKE ?
-        """, (f"%{query}%",))
+            GROUP BY a.album_id, a.name, ar.name, a.album_url
+        """
+
+        # Add ORDER BY clause based on album_sort parameter
+        if album_sort == "song_count_desc":
+            album_query += " ORDER BY song_count DESC, a.name ASC"
+        elif album_sort == "song_count_asc":
+            album_query += " ORDER BY song_count ASC, a.name ASC"
+        elif album_sort == "name_desc":
+            album_query += " ORDER BY a.name DESC"
+        elif album_sort == "name_asc":
+            album_query += " ORDER BY a.name ASC"
+
+        cursor.execute(album_query, (f"%{query}%",))
         albums_rows = cursor.fetchall()
         matching_albums = [
             AlbumResponse(
                 id=str(row["album_id"]),
                 name=row["name"],
                 artist=row["artist_name"],
-                url=row["album_url"]
+                url=row["album_url"],
+                song_count=row["song_count"]
             )
             for row in albums_rows
         ]
 
         # Get matching songs with album URLs
-        cursor.execute("""
+        song_query = """
             SELECT s.song_id, s.name as song_name, 
                    ar.name as artist_name, 
                    al.name as album_name,
@@ -314,7 +357,15 @@ async def search_database(q: str = Query(..., description="Search query")):
             JOIN Album al ON s.album_id = al.album_id
             JOIN Artist ar ON al.artist_id = ar.artist_id
             WHERE LOWER(s.name) LIKE ?
-        """, (f"%{query}%",))
+        """
+
+        # Add ORDER BY clause based on song_sort parameter
+        if song_sort == "name_desc":
+            song_query += " ORDER BY s.name DESC"
+        elif song_sort == "name_asc":
+            song_query += " ORDER BY s.name ASC"
+
+        cursor.execute(song_query, (f"%{query}%",))
         songs_rows = cursor.fetchall()
         matching_songs = [
             SongResponse(
