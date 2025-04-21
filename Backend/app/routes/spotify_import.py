@@ -5,12 +5,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 import logging
+from ..main import spotify_service
 
 # Initialize router
 router = APIRouter()
-
-# Initialize service (will be set by main.py)
-spotify_service = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,11 +30,11 @@ async def import_spotify_song(request: SpotifyImportRequest):
     
     try:
         logger.info(f"Importing song from Spotify URL: {request.spotify_url}")
-        song_id = spotify_service.import_song(request.spotify_url)
+        result = spotify_service.import_song(request.spotify_url)
         return SpotifyImportResponse(
             success=True,
-            message="Song imported successfully",
-            song_id=song_id
+            message=result.get("message", "Song imported successfully"),
+            song_id=result.get("song_id")
         )
     except Exception as e:
         logger.error(f"Error importing song: {str(e)}")
