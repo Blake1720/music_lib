@@ -1,7 +1,7 @@
 '''
 This file creates the routes for the database.
 '''
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Body
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import sqlite3
@@ -22,6 +22,7 @@ class SongResponse(BaseModel):
     name: str
     artist: str
     album: str
+    album_url: Optional[str] = None
     genre: Optional[str] = None
     duration: Optional[float] = None
     tempo: Optional[float] = None
@@ -136,6 +137,7 @@ async def get_all_albums() -> AlbumsResponse:
                     id=str(album.get('ID', '')),
                     name=album.get('Album Name', 'Unknown Album'),
                     artist=album.get('Artist', 'Unknown Artist'),
+                    url=album.get('url'),
                     song_count=album.get('SongCount'),
                     release_date=album.get('Release Date')
                 )
@@ -167,6 +169,7 @@ async def get_songs():
             SELECT s.song_id, s.name as song_name, 
                    ar.name as artist_name, 
                    al.name as album_name,
+                   al.album_url as album_url,
                    s.duration, s.tempo,
                    s.spectral_centroid, s.spectral_rolloff,
                    s.spectral_contrast, s.chroma_mean,
@@ -202,6 +205,7 @@ async def get_songs():
                 "name": song['song_name'].decode('utf-8', errors='replace') if isinstance(song['song_name'], bytes) else song['song_name'],
                 "artist": song['artist_name'].decode('utf-8', errors='replace') if isinstance(song['artist_name'], bytes) else song['artist_name'],
                 "album": song['album_name'].decode('utf-8', errors='replace') if isinstance(song['album_name'], bytes) else song['album_name'],
+                "album_url": song['album_url'],
                 "duration": convert_to_float(song['duration']),
                 "tempo": convert_to_float(song['tempo']),
                 "spectral_centroid": convert_to_float(song['spectral_centroid']),
@@ -257,29 +261,72 @@ async def search_database(q: str = Query(..., description="Search query")):
     try:
         query = q.lower()
 
-        artists_data = display_all_artists()
-        albums_data = display_all_albums()
-        songs_data = display_all_songs()
+        # Get the database path
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        db_path = os.path.join(root_dir, "../Database/music_app.db")
+        
+        # Connect to the database
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
+        # Get matching artists
+        cursor.execute("""
+            SELECT artist_id, name
+            FROM Artist
+            WHERE LOWER(name) LIKE ?
+        """, (f"%{query}%",))
+        artists_rows = cursor.fetchall()
         matching_artists = [
             ArtistResponse(
-                id=str(artist["ID"]),
-                name=artist["Name"],
-                album_count=artist.get("AlbumCount"),
-                song_count=artist.get("SongCount"),
+                id=str(row["artist_id"]),
+                name=row["name"]
             )
-            for artist in artists_data
-            if query in artist["Name"].lower()
+            for row in artists_rows
         ]
-        matching_albums = [AlbumResponse(
-            id=str(album.get("ID", "")),
-            name=album.get("Album Name", "Unknown Album"),
-            artist=album.get("Artist Name", "Unknown Artist"),
-            song_count=album.get("SongCount"),
-            release_date=album.get("Release Date")
-        ) for album in albums_data if query in album.get("Album Name", "").lower()]
 
-        matching_songs = [SongResponse(**song) for song in songs_data if query in song['name'].lower()]
+        # Get matching albums with URLs
+        cursor.execute("""
+            SELECT a.album_id, a.name, ar.name as artist_name, a.album_url
+            FROM Album a
+            JOIN Artist ar ON a.artist_id = ar.artist_id
+            WHERE LOWER(a.name) LIKE ?
+        """, (f"%{query}%",))
+        albums_rows = cursor.fetchall()
+        matching_albums = [
+            AlbumResponse(
+                id=str(row["album_id"]),
+                name=row["name"],
+                artist=row["artist_name"],
+                url=row["album_url"]
+            )
+            for row in albums_rows
+        ]
+
+        # Get matching songs with album URLs
+        cursor.execute("""
+            SELECT s.song_id, s.name as song_name, 
+                   ar.name as artist_name, 
+                   al.name as album_name,
+                   al.album_url as album_url,
+                   s.duration
+            FROM Song s
+            JOIN Album al ON s.album_id = al.album_id
+            JOIN Artist ar ON al.artist_id = ar.artist_id
+            WHERE LOWER(s.name) LIKE ?
+        """, (f"%{query}%",))
+        songs_rows = cursor.fetchall()
+        matching_songs = [
+            SongResponse(
+                id=str(row["song_id"]),
+                name=row["song_name"],
+                artist=row["artist_name"],
+                album=row["album_name"],
+                album_url=row["album_url"],
+                duration=row["duration"]
+            )
+            for row in songs_rows
+        ]
 
         return SearchResults(
             artists=matching_artists,
@@ -289,6 +336,9 @@ async def search_database(q: str = Query(..., description="Search query")):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if 'conn' in locals():
+            conn.close()
     
 @router.get("/albums/{album_id}/songs", response_model=AlbumResponse)
 async def get_songs_by_album(album_id: int):
@@ -339,6 +389,7 @@ async def get_songs_by_album(album_id: int):
                 "name": row["song_name"],
                 "album": row["album_name"],
                 "artist": row["artist_name"],
+                "album_url": row["album_url"],
                 "duration": convert_to_float(row["duration"]),
                 "tempo": convert_to_float(row["tempo"]),
                 "spectral_centroid": convert_to_float(row["spectral_centroid"]),
@@ -367,6 +418,7 @@ async def get_songs_by_album(album_id: int):
 
 @router.get("/playlists", response_model=UserPlaylistsResponse)
 async def get_user_playlists(username: str = Query(..., description="Username to look up playlists")):
+    conn = None
     try:
         root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         db_path = os.path.join(root_dir, "../Database/music_app.db")
@@ -375,13 +427,15 @@ async def get_user_playlists(username: str = Query(..., description="Username to
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
+        # First check if user exists
         cursor.execute("SELECT user_id FROM User WHERE name = ?", (username,))
         user_row = cursor.fetchone()
         if not user_row:
-            raise HTTPException(status_code=404, detail="Username not found")
+            raise HTTPException(status_code=404, detail=f"User '{username}' not found")
 
         user_id = user_row["user_id"]
 
+        # Get all playlists for the user
         cursor.execute("""
             SELECT p.name, p.date_created, COUNT(ps.song_id) as song_count
             FROM Playlist p
@@ -391,21 +445,28 @@ async def get_user_playlists(username: str = Query(..., description="Username to
             ORDER BY p.date_created DESC
         """, (user_id,))
 
-        playlists = [
-            PlaylistInfo(
-                name=row["name"],
-                date_created=row["date_created"],
-                song_count=row["song_count"]
-            )
-            for row in cursor.fetchall()
-        ]
+        playlists = []
+        for row in cursor.fetchall():
+            try:
+                playlist = PlaylistInfo(
+                    name=row["name"],
+                    date_created=row["date_created"],
+                    song_count=row["song_count"]
+                )
+                playlists.append(playlist)
+            except Exception as e:
+                print(f"Error processing playlist row: {e}")
+                continue
 
         return UserPlaylistsResponse(username=username, playlists=playlists)
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error fetching playlists: {str(e)}")
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 @router.get("/playlists/songs", response_model=List[SongResponse])
 async def get_songs_from_playlist(
@@ -427,7 +488,8 @@ async def get_songs_from_playlist(
         user_id = user_row["user_id"]
 
         cursor.execute("""
-            SELECT s.song_id, s.name AS song_name, ar.name AS artist_name, al.name AS album_name, s.duration
+            SELECT s.song_id, s.name AS song_name, ar.name AS artist_name, 
+                   al.name AS album_name, al.album_url AS album_url, s.duration
             FROM Playlist_Song ps
             JOIN Song s ON ps.song_id = s.song_id
             JOIN Album al ON s.album_id = al.album_id
@@ -442,6 +504,7 @@ async def get_songs_from_playlist(
                 name=row["song_name"],
                 artist=row["artist_name"],
                 album=row["album_name"],
+                album_url=row["album_url"],
                 duration=row["duration"]
             )
             for row in rows
@@ -453,3 +516,96 @@ async def get_songs_from_playlist(
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
+
+@router.delete("/playlists")
+async def delete_playlist(
+    username: str = Query(..., description="Username of the playlist owner"),
+    playlist_name: str = Query(..., description="Name of the playlist to delete")
+):
+    """Delete a playlist and all its songs"""
+    conn = None
+    try:
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        db_path = os.path.join(root_dir, "../Database/music_app.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Get user_id
+        cursor.execute("SELECT user_id FROM User WHERE name = ?", (username,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            raise HTTPException(status_code=404, detail=f"User '{username}' not found")
+        user_id = user_row[0]
+
+        # Delete playlist songs first (due to foreign key constraint)
+        cursor.execute("""
+            DELETE FROM Playlist_Song 
+            WHERE user_id = ? AND playlist_name = ?
+        """, (user_id, playlist_name))
+
+        # Delete playlist
+        cursor.execute("""
+            DELETE FROM Playlist 
+            WHERE user_id = ? AND name = ?
+        """, (user_id, playlist_name))
+
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Playlist not found")
+
+        conn.commit()
+        return {"message": "Playlist deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting playlist: {str(e)}")
+    finally:
+        if conn:
+            conn.close()
+
+@router.post("/playlists/songs")
+async def add_songs_to_playlist(
+    username: str = Query(..., description="Username of the playlist owner"),
+    playlist_name: str = Query(..., description="Name of the playlist"),
+    song_ids: List[str] = Body(..., description="List of song IDs to add")
+):
+    """Add songs to an existing playlist"""
+    conn = None
+    try:
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        db_path = os.path.join(root_dir, "../Database/music_app.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Get user_id
+        cursor.execute("SELECT user_id FROM User WHERE name = ?", (username,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            raise HTTPException(status_code=404, detail=f"User '{username}' not found")
+        user_id = user_row[0]
+
+        # Verify playlist exists
+        cursor.execute("""
+            SELECT 1 FROM Playlist 
+            WHERE user_id = ? AND name = ?
+        """, (user_id, playlist_name))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Playlist not found")
+
+        # Add each song to the playlist
+        for song_id in song_ids:
+            cursor.execute("""
+                INSERT OR IGNORE INTO Playlist_Song (user_id, playlist_name, song_id)
+                VALUES (?, ?, ?)
+            """, (user_id, playlist_name, song_id))
+
+        conn.commit()
+        return {"message": f"Added {len(song_ids)} songs to playlist successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding songs to playlist: {str(e)}")
+    finally:
+        if conn:
+            conn.close()

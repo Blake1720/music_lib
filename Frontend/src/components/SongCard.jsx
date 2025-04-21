@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-const SongCard = ({ id, image, title, artist, onCardClick }) => {
+const SongCard = ({ id, image, title, artist, onCardClick, album_url }) => {
   const navigate = useNavigate();
   const [clicked, setClicked] = useState(false);
 
@@ -31,10 +31,13 @@ const SongCard = ({ id, image, title, artist, onCardClick }) => {
       {/* Album Art */}
       <div className="relative w-full aspect-square overflow-hidden rounded-lg">
         <img
-          src={image || `https://placehold.co/400x400?text=${title}`}
+          src={album_url || image || "/album_cover.jpg"}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => (e.target.src = "https://placehold.co/400x400?text=Song")}
+          onError={(e) => {
+            e.target.onerror = null; // Prevent infinite loop
+            e.target.src = "/album_cover.jpg";
+          }}
         />
       </div>
 

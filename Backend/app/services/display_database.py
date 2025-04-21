@@ -59,7 +59,8 @@ def display_all_albums() -> List[Dict[str, Any]]:
 
     try:
         cursor.execute("""
-            SELECT a.album_id, a.name as album_name, ar.name as artist_name, a.date_created
+            SELECT a.album_id, a.name as album_name, ar.name as artist_name, 
+                   a.date_created, a.album_url
             FROM Album a
             JOIN Artist ar ON a.artist_id = ar.artist_id
             ORDER BY ar.name, a.name
@@ -76,7 +77,8 @@ def display_all_albums() -> List[Dict[str, Any]]:
                 "ID": row["album_id"],
                 "Album Name": row["album_name"],
                 "Artist": row["artist_name"],
-                "Date Created": row["date_created"]
+                "Date Created": row["date_created"],
+                "url": row["album_url"]
             } for row in albums
         ]
         print(tabulate(album_list, headers="keys", tablefmt="grid"))

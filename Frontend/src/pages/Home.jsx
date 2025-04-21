@@ -43,14 +43,16 @@ const Home = () => {
       });
   
       if (!response.ok) {
-        throw new Error("Failed to generate playlist");
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to generate playlist");
       }
   
       const result = await response.json();
-      alert(`Playlist created successfully!`);
+      alert(`Playlist "${result.playlist.name}" created successfully!`);
   
     } catch (error) {
-      alert(`Playlist already exists!`);
+      console.error("Error generating playlist:", error);
+      alert(error.message || "Failed to create playlist. Please try again.");
     } finally {
       setShowModal(false);
       setSelectedItem(null);
@@ -154,7 +156,8 @@ const Home = () => {
               id={song.id}
               title={song.name}
               artist={song.artist}
-              image={`https://placehold.co/400x400?text=${song.name}`}
+              image={song.image}
+              album_url={song.album_url}
             />
           ))}
         </div>

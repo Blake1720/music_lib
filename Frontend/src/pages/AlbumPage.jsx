@@ -98,16 +98,7 @@ const AlbumPage = () => {
         </div>
 
         {/* Song List */}
-        {album.songs.map((song) => (
-            <SongList
-              onCardClick={handleCardClick}
-              key={song.id}
-              id={song.id}
-              title={song.name}
-              artist={song.artist}
-              image={`https://placehold.co/400x400?text=${song.name}`}
-            />
-        ))}
+        <SongList songs={album.songs} onCardClick={handleCardClick} />
       </div>
     </div>
   );

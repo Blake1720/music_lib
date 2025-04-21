@@ -13,7 +13,28 @@ const Login = () => {
     e.preventDefault();
     setError("");
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      const username = userCredential.user.displayName;
+      
+      // Create user in our database if they don't exist
+      const response = await fetch("http://localhost:8000/account/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: username,
+          age: null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status !== 409) { // 409 is "user already exists"
+          throw new Error(errorData.detail || "Failed to create user in database");
+        }
+      }
+      
       navigate("/");
     } catch (err) {
       setError(err.message);

@@ -24,10 +24,10 @@ const AlbumCard = ({ id, name, artist, image }) => {
       {/* Album Cover */}
       <div className="relative w-full aspect-square overflow-hidden rounded-lg">
         <img
-          src={image || "https://placehold.co/400x400?text=Album"}
+          src={image || "/album_cover.jpg"}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => (e.target.src = "https://placehold.co/400x400?text=Album")}
+          onError={(e) => (e.target.src = "/album_cover.jpg")}
         />
       </div>
 

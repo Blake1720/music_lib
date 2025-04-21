@@ -107,7 +107,7 @@ const ArtistPage = () => {
                 id={album.id}
                 name={album.name}
                 artist={album.artist}
-                image={`https://placehold.co/400x400?text=${album.name}`}
+                image={album.url || `/album_cover.jpg`}
               />
             ))}
           </div>

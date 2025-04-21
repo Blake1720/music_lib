@@ -47,18 +47,14 @@ async def startup_event():
         # Import and include routers after services are initialized
         from .routes import database_route, recommendations, spotify_import
         
-        # Make services available to the routers
-        spotify_import.spotify_service = spotify_service
-        recommendations.recommendation_service = recommendation_service
-        
-        # Include routers
-        app.include_router(recommendations.router, prefix="/api/v1", tags=["recommendations"])
-        app.include_router(database_route.router, prefix="/database", tags=["database"])
+        # Include all routers
         app.include_router(account.router, prefix="/account", tags=["account"])
+        app.include_router(database_route.router, prefix="/database", tags=["database"])
+        app.include_router(recommendations.router, prefix="/api/v1", tags=["recommendations"])
         app.include_router(spotify_import.router, prefix="/api/v1/spotify", tags=["spotify"])
+        
     except Exception as e:
-        print(f"Error initializing services: {e}")
-        raise
+        print(f"Error during startup: {str(e)}")
 
 @app.on_event("shutdown")
 async def shutdown_event():

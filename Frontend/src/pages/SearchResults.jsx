@@ -109,7 +109,7 @@ const SearchResults = () => {
                   id={song.id}
                   title={song.name}
                   artist={song.artist}
-                  image={song.image || `https://placehold.co/400x400?text=${song.name}`}
+                  image={song.album_url || `/album_cover.jpg`}
                 />
               ))}
             </div>
@@ -148,7 +148,7 @@ const SearchResults = () => {
                   id={album.id}
                   name={album.name}
                   artist={album.artist}
-                  image={album.image || `https://placehold.co/400x400?text=${encodeURIComponent(album.name)}`}
+                  image={album.url || `/album_cover.jpg`}
                 />
               ))}
             </div>
