@@ -152,7 +152,7 @@ async def get_all_albums() -> AlbumsResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/songs", response_model=SongsResponse)
-async def get_songs():
+async def get_songs(sort_by: Optional[str] = Query(None, description="Sort by: 'name_asc', 'name_desc'")):
     """Get all songs from the database"""
     try:
         # Get the database path
@@ -164,8 +164,8 @@ async def get_songs():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Get all songs with their artist and album names
-        cursor.execute("""
+        # Base query
+        query = """
             SELECT s.song_id, s.name as song_name, 
                    ar.name as artist_name, 
                    al.name as album_name,
@@ -178,7 +178,17 @@ async def get_songs():
             FROM Song s
             JOIN Album al ON s.album_id = al.album_id
             JOIN Artist ar ON al.artist_id = ar.artist_id
-        """)
+        """
+
+        # Add ORDER BY clause based on sort_by parameter
+        if sort_by == "name_desc":
+            query += " ORDER BY s.name DESC"
+        elif sort_by == "name_asc":
+            query += " ORDER BY s.name ASC"
+        else:
+            query += " ORDER BY s.song_id ASC"  # Default sorting by ID
+
+        cursor.execute(query)
         
         # Fetch all results
         songs = cursor.fetchall()
@@ -293,13 +303,15 @@ async def search_database(
         
         # Add ORDER BY clause based on sort_by parameter
         if sort_by == "song_count_desc":
-            artist_query += " ORDER BY song_count DESC, name ASC"
+            artist_query += " ORDER BY song_count DESC, ar.artist_id ASC"
         elif sort_by == "song_count_asc":
-            artist_query += " ORDER BY song_count ASC, name ASC"
+            artist_query += " ORDER BY song_count ASC, ar.artist_id ASC"
         elif sort_by == "name_desc":
-            artist_query += " ORDER BY name DESC"
+            artist_query += " ORDER BY ar.name DESC, ar.artist_id ASC"
         elif sort_by == "name_asc":
-            artist_query += " ORDER BY name ASC"
+            artist_query += " ORDER BY ar.name ASC, ar.artist_id ASC"
+        else:
+            artist_query += " ORDER BY ar.artist_id ASC"  # Default sorting by ID
         
         cursor.execute(artist_query, (f"%{query}%",))
         artists_rows = cursor.fetchall()
@@ -325,13 +337,15 @@ async def search_database(
 
         # Add ORDER BY clause based on album_sort parameter
         if album_sort == "song_count_desc":
-            album_query += " ORDER BY song_count DESC, a.name ASC"
+            album_query += " ORDER BY song_count DESC, a.album_id ASC"
         elif album_sort == "song_count_asc":
-            album_query += " ORDER BY song_count ASC, a.name ASC"
+            album_query += " ORDER BY song_count ASC, a.album_id ASC"
         elif album_sort == "name_desc":
-            album_query += " ORDER BY a.name DESC"
+            album_query += " ORDER BY a.name DESC, a.album_id ASC"
         elif album_sort == "name_asc":
-            album_query += " ORDER BY a.name ASC"
+            album_query += " ORDER BY a.name ASC, a.album_id ASC"
+        else:
+            album_query += " ORDER BY a.album_id ASC"  # Default sorting by ID
 
         cursor.execute(album_query, (f"%{query}%",))
         albums_rows = cursor.fetchall()
@@ -361,9 +375,11 @@ async def search_database(
 
         # Add ORDER BY clause based on song_sort parameter
         if song_sort == "name_desc":
-            song_query += " ORDER BY s.name DESC"
+            song_query += " ORDER BY s.name DESC, s.song_id ASC"
         elif song_sort == "name_asc":
-            song_query += " ORDER BY s.name ASC"
+            song_query += " ORDER BY s.name ASC, s.song_id ASC"
+        else:
+            song_query += " ORDER BY s.song_id ASC"  # Default sorting by ID
 
         cursor.execute(song_query, (f"%{query}%",))
         songs_rows = cursor.fetchall()

@@ -124,7 +124,7 @@ const SearchResults = () => {
               onChange={(e) => setSongSort(e.target.value || null)}
               className="bg-neutral-800 text-white px-3 py-1 rounded-lg"
             >
-              <option value="">Sort by name</option>
+              <option value="">Sort by ID</option>
               <option value="name_asc">A to Z</option>
               <option value="name_desc">Z to A</option>
             </select>
@@ -167,7 +167,7 @@ const SearchResults = () => {
                 onChange={(e) => setSortBy(e.target.value || null)}
                 className="bg-neutral-800 text-white px-3 py-1 rounded-lg"
               >
-                <option value="">Sort by name</option>
+                <option value="">Sort by ID</option>
                 <option value="name_asc">A to Z</option>
                 <option value="name_desc">Z to A</option>
                 <option value="song_count_desc">Most songs first</option>
@@ -201,7 +201,7 @@ const SearchResults = () => {
               onChange={(e) => setAlbumSort(e.target.value || null)}
               className="bg-neutral-800 text-white px-3 py-1 rounded-lg"
             >
-              <option value="">Sort by name</option>
+              <option value="">Sort by ID</option>
               <option value="name_asc">A to Z</option>
               <option value="name_desc">Z to A</option>
               <option value="song_count_desc">Most songs first</option>
