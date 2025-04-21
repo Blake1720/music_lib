@@ -1,7 +1,7 @@
 '''
 This file creates the routes for the database.
 '''
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, HTTPException, Query, Body, Form, UploadFile, File
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import sqlite3
@@ -83,6 +83,7 @@ class PlaylistInfo(BaseModel):
     name: str
     date_created: str
     song_count: int
+    image_url: Optional[str] = None
 
 class UserPlaylistsResponse(BaseModel):
     username: str
@@ -504,11 +505,11 @@ async def get_user_playlists(username: str = Query(..., description="Username to
 
         # Get all playlists for the user
         cursor.execute("""
-            SELECT p.name, p.date_created, COUNT(ps.song_id) as song_count
+            SELECT p.name, p.date_created, p.image_url, COUNT(ps.song_id) as song_count
             FROM Playlist p
             LEFT JOIN Playlist_Song ps ON p.user_id = ps.user_id AND p.name = ps.playlist_name
             WHERE p.user_id = ?
-            GROUP BY p.name, p.date_created
+            GROUP BY p.name, p.date_created, p.image_url
             ORDER BY p.date_created DESC
         """, (user_id,))
 
@@ -518,7 +519,8 @@ async def get_user_playlists(username: str = Query(..., description="Username to
                 playlist = PlaylistInfo(
                     name=row["name"],
                     date_created=row["date_created"],
-                    song_count=row["song_count"]
+                    song_count=row["song_count"],
+                    image_url=row["image_url"]
                 )
                 playlists.append(playlist)
             except Exception as e:
@@ -673,6 +675,122 @@ async def add_songs_to_playlist(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error adding songs to playlist: {str(e)}")
+    finally:
+        if conn:
+            conn.close()
+
+@router.put("/playlists/rename")
+async def rename_playlist(
+    username: str = Query(..., description="Username of the playlist owner"),
+    old_name: str = Query(..., description="Current playlist name"),
+    new_name: str = Query(..., description="New playlist name")
+):
+    """Rename an existing playlist"""
+    conn = None
+    try:
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        db_path = os.path.join(root_dir, "../Database/music_app.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Get user_id
+        cursor.execute("SELECT user_id FROM User WHERE name = ?", (username,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            raise HTTPException(status_code=404, detail=f"User '{username}' not found")
+        user_id = user_row[0]
+
+        # Check if new name already exists
+        cursor.execute("""
+            SELECT 1 FROM Playlist 
+            WHERE user_id = ? AND name = ?
+        """, (user_id, new_name))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail=f"Playlist name '{new_name}' already exists")
+
+        # Update playlist name
+        cursor.execute("""
+            UPDATE Playlist 
+            SET name = ?
+            WHERE user_id = ? AND name = ?
+        """, (new_name, user_id, old_name))
+
+        # Also update the name in Playlist_Song table
+        cursor.execute("""
+            UPDATE Playlist_Song 
+            SET playlist_name = ?
+            WHERE user_id = ? AND playlist_name = ?
+        """, (new_name, user_id, old_name))
+
+        conn.commit()
+        return {"message": f"Playlist renamed from '{old_name}' to '{new_name}'"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error renaming playlist: {str(e)}")
+    finally:
+        if conn:
+            conn.close()
+
+@router.post("/playlists/image")
+async def upload_playlist_image(
+    username: str = Form(...),
+    playlist_name: str = Form(...),
+    image: UploadFile = File(...)
+):
+    """Upload an image for a playlist"""
+    conn = None
+    try:
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        db_path = os.path.join(root_dir, "../Database/music_app.db")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Get user_id
+        cursor.execute("SELECT user_id FROM User WHERE name = ?", (username,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            raise HTTPException(status_code=404, detail=f"User '{username}' not found")
+        user_id = user_row[0]
+
+        # Verify playlist exists
+        cursor.execute("""
+            SELECT 1 FROM Playlist 
+            WHERE user_id = ? AND name = ?
+        """, (user_id, playlist_name))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Playlist not found")
+
+        # Save the image file
+        image_dir = os.path.join(root_dir, "../Frontend/public/playlist_images")
+        os.makedirs(image_dir, exist_ok=True)
+        
+        # Generate a unique filename
+        file_extension = os.path.splitext(image.filename)[1]
+        unique_filename = f"{user_id}_{playlist_name}{file_extension}"
+        file_path = os.path.join(image_dir, unique_filename)
+        
+        # Save the file
+        with open(file_path, "wb") as buffer:
+            content = await image.read()
+            buffer.write(content)
+        
+        # Update the playlist with the image URL
+        image_url = f"/playlist_images/{unique_filename}"
+        cursor.execute("""
+            UPDATE Playlist 
+            SET image_url = ?
+            WHERE user_id = ? AND name = ?
+        """, (image_url, user_id, playlist_name))
+        
+        conn.commit()
+        return {"image_url": image_url}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error uploading playlist image: {str(e)}")
     finally:
         if conn:
             conn.close()

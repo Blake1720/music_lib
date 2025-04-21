@@ -72,6 +72,7 @@ def create_music_app_db():
         user_id INTEGER,
         name TEXT,
         date_created DATETIME,
+        image_url TEXT,
         PRIMARY KEY (user_id, name),
         FOREIGN KEY (user_id) REFERENCES User(user_id)
     );

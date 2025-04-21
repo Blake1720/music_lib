@@ -120,6 +120,21 @@ const PlaylistPage = () => {
       if (!username) return;
 
       try {
+        // Fetch playlist info
+        const playlistRes = await fetch(
+          `http://localhost:8000/database/playlists?username=${encodeURIComponent(username)}`
+        );
+        if (!playlistRes.ok) throw new Error("Failed to fetch playlist info");
+        const playlistData = await playlistRes.json();
+        const playlist = playlistData.playlists.find(p => p.name === playlistName);
+        
+        if (playlist) {
+          setPlaylistInfo({
+            name: playlist.name,
+            image: playlist.image_url || `https://placehold.co/100x100?text=${playlist.name}`,
+          });
+        }
+
         // Fetch playlist songs
         const res = await fetch(
           `http://localhost:8000/database/playlists/songs?username=${encodeURIComponent(username)}&playlist_name=${encodeURIComponent(playlistName)}`
@@ -133,11 +148,6 @@ const PlaylistPage = () => {
         if (!allSongsRes.ok) throw new Error("Failed to fetch all songs");
         const allSongsData = await allSongsRes.json();
         setAllSongs(allSongsData.songs);
-
-        setPlaylistInfo({
-          name: playlistName,
-          image: `https://placehold.co/100x100?text=${playlistName}`,
-        });
       } catch (err) {
         console.error("Error loading playlist:", err.message);
       } finally {
@@ -238,7 +248,7 @@ const PlaylistPage = () => {
                     >
                       <div className="flex items-center gap-4">
                         <img
-                          src={song.album_url || "/album_cover.jpg"}
+                          src={song.album_url || song.image || "/album_cover.jpg"}
                           alt={song.name}
                           className="w-12 h-12 rounded object-cover"
                           onError={(e) => {
